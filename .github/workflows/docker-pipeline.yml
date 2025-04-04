@@ -28,4 +28,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: vasiliyseibert/domain-modelling-copilot:latest
+          tags: darshanscripts/domain-modelling-copilot:latest
