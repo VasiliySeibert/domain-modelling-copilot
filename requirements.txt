@@ -1,8 +1,7 @@
-flask==2.3.2                # Web framework for building the application
-flask-dotenv==0.1.3         # For loading environment variables in Flask
-openai==0.27.8              # OpenAI API client for GPT integration
-pytest==7.4.0               # Testing framework
-pytest-flask==1.2.0         # Flask-specific testing utilities
-requests==2.31.0            # For making HTTP requests (if needed in the future)
-python-dotenv==1.0.0        # For managing environment variables
-
+flask==2.3.2                
+flask-dotenv        
+openai==0.27.8              
+pytest==7.4.0              
+pytest-flask==1.2.0        
+requests       
+python-dotenv==1.0.0       
