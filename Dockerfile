@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     libffi-dev \
     libssl-dev \
+    python3-pip \ 
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
