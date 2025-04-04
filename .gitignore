@@ -5,9 +5,6 @@ __pycache__/
 *.pyd
 *.ipynb_checkpoints/
 
-# Environment files
-.env
-
 # IDE-specific files
 .vscode/
 .idea/
