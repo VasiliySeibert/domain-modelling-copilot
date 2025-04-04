@@ -1,0 +1,195 @@
+/* Ensure the main content fills the viewport height */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scrolling */
+}
+
+/* Main Content */
+.main-content {
+    height: 90vh; /* Reduced height to 90% of the viewport */
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    flex-grow: 1; /* Allow the row to grow and fill available space */
+    display: flex;
+}
+
+.card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Ensure the card body fills its parent */
+    overflow: hidden; /* Prevent overflow */
+}
+
+.chat-box, .response-area, .uml-section {
+    flex-grow: 1; /* Allow these sections to grow and fill available space */
+    overflow-y: auto; /* Add scrolling if content overflows */
+}
+
+/* Chat Box */
+.chat-box {
+    height: 300px; /* Reduced height for the chatbox */
+    overflow-y: auto;
+    background: #f9f9f9;
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid #e1e4e8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Chat Messages */
+.chat-message {
+    padding: 10px 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    max-width: 75%;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+/* User Messages */
+.user-message {
+    background: #007bff;
+    color: white;
+    text-align: right;
+    margin-left: auto;
+    border-radius: 15px 15px 0 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Bot Messages */
+.bot-message {
+    background: #e9ecef;
+    color: #333;
+    text-align: left;
+    border-radius: 15px 15px 15px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Loading Dots */
+.loading-dots {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.loading-dots span {
+    width: 8px;
+    height: 8px;
+    margin: 0 4px;
+    background-color: #007bff;
+    border-radius: 50%;
+    animation: blink 1.4s infinite;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+    0%, 80%, 100% {
+        opacity: 0;
+    }
+    40% {
+        opacity: 1;
+    }
+}
+
+/* Hide the loading indicator by default */
+.d-none {
+    display: none;
+}
+
+/* Buttons */
+button {
+    transition: 0.3s;
+    border-radius: 5px;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+/* Response Area */
+.response-area {
+    height: 200px; /* Reduced height for the response area */
+    background: #ffffff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 5px;
+    overflow-y: auto; /* Enable scrolling for long content */
+}
+
+/* UML Section */
+.uml-section {
+    height: 200px; /* Reduced height for the UML section */
+    background: #ffffff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-y: auto; /* Enable scrolling for UML content */
+}
+
+/* Tabs */
+.nav-tabs .nav-link {
+    color: #007bff;
+}
+
+.nav-tabs .nav-link.active {
+    background: #007bff;
+    color: white;
+}
+
+/* Header */
+header {
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+}
+
+/* Input Field */
+.input-group input {
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.input-group button {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Animation for action buttons */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Action Buttons */
+#actionButtons {
+    height: 40px; /* Reduced height for reserved space */
+    visibility: hidden; /* Initially hidden */
+    opacity: 0; /* Fully transparent */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#actionButtons.show {
+    visibility: visible; /* Make visible */
+    opacity: 1; /* Fade in */
+}

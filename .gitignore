@@ -1,0 +1,20 @@
+# Python-related files
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.ipynb_checkpoints/
+
+# Environment files
+.env
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Docker-related files
+*.log
