@@ -1,15 +1,22 @@
 document.addEventListener("DOMContentLoaded", () => {
     const userNameInput = document.getElementById("userName");
+    const submitNameBtn = document.getElementById("submitNameBtn"); 
 
-    // Load saved name
+    // Load saved name from sessionStorage
     const savedName = sessionStorage.getItem("userData");
     if (savedName) {
         userNameInput.value = savedName;
     }
 
-    // Save username on blur
-    userNameInput.addEventListener("blur", () => {
-        sessionStorage.setItem("userData", userNameInput.value);
+    // Save username on button click instead of blur
+    submitNameBtn.addEventListener("click", () => {
+        const name = userNameInput.value.trim();
+        if (name) {
+            sessionStorage.setItem("userData", name);
+            console.log("Name saved:", name);
+        } else {
+            alert("Please enter a name.");
+        }
     });
 });
 
