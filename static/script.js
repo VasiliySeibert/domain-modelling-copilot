@@ -115,3 +115,180 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const userInput = document.getElementById("userInput");
+    const sendButton = document.getElementById("sendButton");
+    const chatBox = document.getElementById("chatBox");
+    const plantumlText = document.getElementById("plantumlText");
+    const scenarioText = document.getElementById("scenarioText");
+    const loadingIndicator = document.getElementById("loadingIndicator");
+
+    // Function to process the scenario
+    function processScenario() {
+        const scenario = userInput.value.trim();
+        if (!scenario) {
+            alert("Please enter a scenario.");
+            return;
+        }
+
+        // Disable input and button while processing
+        userInput.disabled = true;
+        sendButton.disabled = true;
+
+        // Show the loading indicator
+        loadingIndicator.classList.remove("d-none");
+
+        // Send the scenario to the server
+        fetch("/process_scenario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: scenario }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else if (data.plantuml) {
+                    // Update the PlantUML content
+                    plantumlText.textContent = data.plantuml;
+
+                    // Update the scenario text content
+                    scenarioText.textContent = data.scenario;
+
+                    // Display the summary in the chatbox
+                    const summaryDiv = document.createElement("div");
+                    summaryDiv.classList.add("chat-message", "bot-message");
+                    summaryDiv.textContent = data.summary;
+                    chatBox.appendChild(summaryDiv);
+                    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+                } else {
+                    // Display a normal chatbot response
+                    const botMessageDiv = document.createElement("div");
+                    botMessageDiv.classList.add("chat-message", "bot-message");
+                    botMessageDiv.textContent = data.response;
+                    chatBox.appendChild(botMessageDiv);
+                    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+                }
+            })
+            .catch((err) => {
+                console.error("Error:", err);
+                alert("An error occurred while processing the scenario.");
+            })
+            .finally(() => {
+                // Hide the loading indicator
+                loadingIndicator.classList.add("d-none");
+
+                // Re-enable input and button
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.value = ""; // Clear the input field
+                userInput.focus(); // Focus back on the input field
+            });
+    }
+
+    // Event listener for the send button
+    sendButton.addEventListener("click", processScenario);
+
+    // Allow pressing Enter to submit the scenario
+    userInput.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            processScenario();
+        }
+    });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const plantumlText = document.getElementById("plantumlText");
+    const scenarioText = document.getElementById("scenarioText");
+    const chatBox = document.getElementById("chatBox");
+    const generateScenarioButton = document.createElement("button");
+
+    // // Add a button to generate the scenario
+    // generateScenarioButton.textContent = "Generate Scenario";
+    // generateScenarioButton.classList.add("btn", "btn-primary", "mt-3");
+    // plantumlText.parentElement.appendChild(generateScenarioButton);
+
+    // Function to generate a scenario from PlantUML
+    function generateScenario() {
+        const plantuml = plantumlText.textContent.trim();
+        if (!plantuml) {
+            alert("PlantUML text is empty. Please provide a valid diagram.");
+            return;
+        }
+
+        // Send the PlantUML text to the server
+        fetch("/generate_scenario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plantuml: plantuml }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Display the summary in the chatbox
+                    const summaryDiv = document.createElement("div");
+                    summaryDiv.classList.add("chat-message", "bot-message");
+                    summaryDiv.textContent = data.summary;
+                    chatBox.appendChild(summaryDiv);
+                    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+
+                    // Display the detailed description in the scenarioText element
+                    scenarioText.textContent = data.detailed_description;
+                }
+            })
+            .catch((err) => {
+                console.error("Error:", err);
+                alert("An error occurred while generating the scenario.");
+            });
+    }
+
+    // Add event listener to the button
+    generateScenarioButton.addEventListener("click", generateScenario);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const scenarioText = document.getElementById("scenarioText");
+    const plantumlText = document.getElementById("plantumlText");
+    const generateUMLButton = document.createElement("button");
+
+    // Add a button to generate UML
+    generateUMLButton.textContent = "Generate UML";
+    generateUMLButton.classList.add("btn", "btn-primary", "mt-3");
+    scenarioText.parentElement.appendChild(generateUMLButton);
+
+    // Function to generate UML from scenarioText
+    function generateUML() {
+        const scenario = scenarioText.textContent.trim();
+        if (!scenario) {
+            alert("Scenario text is empty. Please provide a valid scenario.");
+            return;
+        }
+
+        // Send the scenario text to the server
+        fetch("/generate_uml", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scenarioText: scenario }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    // Update the PlantUML content
+                    plantumlText.textContent = data.plantuml;
+                }
+            })
+            .catch((err) => {
+                console.error("Error:", err);
+                alert("An error occurred while generating the UML.");
+            });
+    }
+
+    // Add event listener to the button
+    generateUMLButton.addEventListener("click", generateUML);
+});
