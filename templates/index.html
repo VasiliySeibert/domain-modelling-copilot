@@ -62,8 +62,8 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-body d-flex flex-column">
                         <!-- Response Area -->
-                        <div class="response-area border rounded p-3 mb-3 flex-grow-1">
-                            <p id="scenarioText"></p>
+                        <div class="response-area border rounded p-3 mb-3" style="height: 150px; overflow-y: auto;">
+                            <p id="scenarioText" class="mb-0"></p>
                         </div>
 
                         <!-- Tabs -->
@@ -80,7 +80,7 @@
                         <div class="tab-content mt-3">
                             <!-- PlantUML Content -->
                             <div class="tab-pane fade show active" id="plantuml-content">
-                                <pre id="plantumlText">
+                                <pre id="plantumlText" style="height: 300px; overflow-y: auto; background-color: #f8f9fa; padding: 1rem;" class="border rounded">
                                     <!-- PlantUML diagram will be displayed here -->
                                 </pre>
                             </div>

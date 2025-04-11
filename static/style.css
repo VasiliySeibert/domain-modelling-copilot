@@ -30,6 +30,16 @@ html, body {
     overflow-y: auto; /* Add scrolling if content overflows */
 }
 
+.response-area {
+    height: 220px; /* Increased height */
+    background: #ffffff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 5px;
+    overflow-y: auto; /* Ensures scrolling when content exceeds */
+}
+
 /* Chat Box */
 .chat-box {
     height: 300px; /* Reduced height for the chatbox */
@@ -192,4 +202,12 @@ header {
 #actionButtons.show {
     visibility: visible; /* Make visible */
     opacity: 1; /* Fade in */
+}
+
+#plantumlText {
+    height: 300px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
 }

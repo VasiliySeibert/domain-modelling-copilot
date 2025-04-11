@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (name) {
             sessionStorage.setItem("userData", name);
             console.log("Name saved:", name);
+            alert("Name saved successfully!");
         } else {
             alert("Please enter a name.");
         }
@@ -124,11 +125,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const scenarioText = document.getElementById("scenarioText");
     const loadingIndicator = document.getElementById("loadingIndicator");
 
-    // Function to process the scenario
-    function processScenario() {
-        const scenario = userInput.value.trim();
-        if (!scenario) {
-            alert("Please enter a scenario.");
+    // Function to process the input
+    function processInput() {
+        const input = userInput.value.trim();
+        if (!input) {
+            alert("Please enter a message.");
             return;
         }
 
@@ -139,17 +140,23 @@ document.addEventListener("DOMContentLoaded", () => {
         // Show the loading indicator
         loadingIndicator.classList.remove("d-none");
 
-        // Send the scenario to the server
+        // Send the input to the server
         fetch("/process_scenario", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: scenario }),
+            body: JSON.stringify({ message: input }),
         })
             .then((response) => response.json())
             .then((data) => {
                 if (data.error) {
                     alert(data.error);
-                } else if (data.plantuml) {
+                } else if (data.type === "general") {
+                    // Display the chatbot response for general input
+                    const botMessageDiv = document.createElement("div");
+                    botMessageDiv.classList.add("chat-message", "bot-message");
+                    botMessageDiv.textContent = data.response;
+                    chatBox.appendChild(botMessageDiv);
+                } else if (data.type === "scenario") {
                     // Update the PlantUML content
                     plantumlText.textContent = data.plantuml;
 
@@ -161,19 +168,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     summaryDiv.classList.add("chat-message", "bot-message");
                     summaryDiv.textContent = data.summary;
                     chatBox.appendChild(summaryDiv);
-                    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
-                } else {
-                    // Display a normal chatbot response
-                    const botMessageDiv = document.createElement("div");
-                    botMessageDiv.classList.add("chat-message", "bot-message");
-                    botMessageDiv.textContent = data.response;
-                    chatBox.appendChild(botMessageDiv);
-                    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
                 }
+
+                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
             })
             .catch((err) => {
                 console.error("Error:", err);
-                alert("An error occurred while processing the scenario.");
+                // alert("An error occurred while processing your input.");
             })
             .finally(() => {
                 // Hide the loading indicator
@@ -188,13 +189,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Event listener for the send button
-    sendButton.addEventListener("click", processScenario);
+    sendButton.addEventListener("click", processInput);
 
-    // Allow pressing Enter to submit the scenario
+    // Allow pressing Enter to submit the input
     userInput.addEventListener("keypress", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
-            processScenario();
+            processInput();
         }
     });
 });
@@ -256,9 +257,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const generateUMLButton = document.createElement("button");
 
     // Add a button to generate UML
-    generateUMLButton.textContent = "Generate UML";
-    generateUMLButton.classList.add("btn", "btn-primary", "mt-3");
-    scenarioText.parentElement.appendChild(generateUMLButton);
+    // generateUMLButton.textContent = "Generate UML";
+    // generateUMLButton.classList.add("btn", "btn-primary", "mt-3");
+    // scenarioText.parentElement.appendChild(generateUMLButton);
 
     // Function to generate UML from scenarioText
     function generateUML() {

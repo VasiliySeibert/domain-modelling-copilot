@@ -1,3 +1,5 @@
 flask
 python-dotenv
 openai==1.70.0
+pytest
+werkzeug==2.2.3

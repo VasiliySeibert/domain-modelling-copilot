@@ -15,22 +15,22 @@ client = AzureOpenAI(
     azure_endpoint=os.getenv("ENDPOINT"),
 )
 
-# Function to get chatbot response from OpenAI API
-def chatbot_response(user_input):
-    try:
-        prompts = [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": user_input},
-        ]
+# # Function to get chatbot response from OpenAI API
+# def chatbot_response(user_input):
+#     try:
+#         prompts = [
+#             {"role": "system", "content": "You are a helpful assistant."},
+#             {"role": "user", "content": user_input},
+#         ]
 
-        response = client.chat.completions.create(
-            model=os.getenv("GPT_MODEL"), messages=prompts
-        )
+#         response = client.chat.completions.create(
+#             model=os.getenv("GPT_MODEL"), messages=prompts
+#         )
 
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"Error with OpenAI API: {e}")
-        return "Sorry, I couldn't process your request."
+#         return response.choices[0].message.content.strip()
+#     except Exception as e:
+#         print(f"Error with OpenAI API: {e}")
+#         return "Sorry, I couldn't process your request."
 
 # Initialize chat history as a list of dictionaries
 chat_history = []
@@ -65,35 +65,38 @@ def chat():
         # Add the bot's response to the chat history
         chat_history.append({"role": "assistant", "content": bot_reply})
 
-        # Example of a formatted response
-        formatted_reply = f"""
-        <p><b>Response:</b></p>
-        <ul>
-            <li><i>{bot_reply}</i></li>
-        </ul>
-        """
-
-        return jsonify({"response": formatted_reply, "history": chat_history})
+        # Return the raw bot reply
+        return jsonify({"response": bot_reply, "history": chat_history})
     except Exception as e:
         print(f"Error in /chat endpoint: {e}")
         return jsonify({"error": "An error occurred"}), 500
 
 @app.route("/process_scenario", methods=["POST"])
 def process_scenario():
-    """Process the user-provided scenario and return the PlantUML, summary, and scenario text."""
+    """Process the user-provided input and return the PlantUML, summary, and detailed scenario."""
     try:
         # Get the scenario text from the request
         scenario_text = request.json.get("message", "").strip()
         if not scenario_text:
             return jsonify({"error": "Scenario text is required"}), 400
 
-        # Check if the input is sufficient for generating a scenario
-        if len(scenario_text.split()) < 5:  # Example condition: input has fewer than 5 words
-            # Return a normal chatbot response
-            bot_reply = chatbot_response(scenario_text)
-            return jsonify({"response": bot_reply, "history": []})
+        # Use GPT to classify the input
+        prompts = [
+            {"role": "system", "content": "You are an expert in classifying user inputs."},
+            {"role": "user", "content": f"Is the following input a scenario description or a general query? Respond with 'scenario' or 'general'.\n\nInput: {scenario_text}"}
+        ]
+        classification_response = client.chat.completions.create(
+            model=os.getenv("GPT_MODEL"),
+            messages=prompts
+        )
+        classification = classification_response.choices[0].message.content.strip().lower()
 
-        # Call gpt_v2_interface to process the scenario and generate PlantUML
+        if classification == "general":
+            # Return a normal chatbot response for general input
+            bot_reply = chatbot_response(scenario_text)
+            return jsonify({"response": bot_reply, "type": "general"})
+
+        # If input is scenario-based, process it to generate PlantUML and detailed scenario
         plant_uml = gpt_v2_interface(scenario_text, client)
 
         # Generate a detailed scenario description from the PlantUML
@@ -119,10 +122,10 @@ def process_scenario():
         summary = summary_response.choices[0].message.content.strip()
 
         # Return the PlantUML, summary, and detailed scenario
-        return jsonify({"plantuml": plant_uml, "summary": summary, "scenario": detailed_description})
+        return jsonify({"plantuml": plant_uml, "summary": summary, "scenario": detailed_description, "type": "scenario"})
     except Exception as e:
         print(f"Error processing scenario: {e}")
-        return jsonify({"error": "An error occurred while processing the scenario"}), 500
+        # return jsonify({"error": "An error occurred while processing the input"}), 500
 
 @app.route("/generate_scenario", methods=["POST"])
 def generate_scenario():
