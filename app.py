@@ -15,22 +15,22 @@ client = AzureOpenAI(
     azure_endpoint=os.getenv("ENDPOINT"),
 )
 
-# # Function to get chatbot response from OpenAI API
-# def chatbot_response(user_input):
-#     try:
-#         prompts = [
-#             {"role": "system", "content": "You are a helpful assistant."},
-#             {"role": "user", "content": user_input},
-#         ]
+# Function to get chatbot response from OpenAI API
+def chatbot_response(user_input):
+    try:
+        prompts = [
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": user_input},
+        ]
 
-#         response = client.chat.completions.create(
-#             model=os.getenv("GPT_MODEL"), messages=prompts
-#         )
+        response = client.chat.completions.create(
+            model=os.getenv("GPT_MODEL"), messages=prompts
+        )
 
-#         return response.choices[0].message.content.strip()
-#     except Exception as e:
-#         print(f"Error with OpenAI API: {e}")
-#         return "Sorry, I couldn't process your request."
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"Error with OpenAI API: {e}")
+        return "Sorry, I couldn't process your request."
 
 # Initialize chat history as a list of dictionaries
 chat_history = []
