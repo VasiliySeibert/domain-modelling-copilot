@@ -1,6 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // DOM Elements
     const userNameInput = document.getElementById("userName");
-    const submitNameBtn = document.getElementById("submitNameBtn"); 
+    const submitNameBtn = document.getElementById("submitNameBtn");
+    const userInput = document.getElementById("userInput");
+    const sendButton = document.getElementById("sendButton");
+    const chatBox = document.getElementById("chatBox");
+    const loadingIndicator = document.getElementById("loadingIndicator");
+    const plantumlText = document.getElementById("plantumlText");
+    const scenarioText = document.getElementById("scenarioText");
 
     // Load saved name from sessionStorage
     const savedName = sessionStorage.getItem("userData");
@@ -8,27 +15,16 @@ document.addEventListener("DOMContentLoaded", () => {
         userNameInput.value = savedName;
     }
 
-    // Save username on button click instead of blur
+    // Save username on button click
     submitNameBtn.addEventListener("click", () => {
         const name = userNameInput.value.trim();
         if (name) {
             sessionStorage.setItem("userData", name);
             console.log("Name saved:", name);
-            alert("Name saved successfully!");
         } else {
             alert("Please enter a name.");
         }
     });
-});
-
-
-document.addEventListener("DOMContentLoaded", () => {
-    const userInput = document.getElementById("userInput");
-    const sendButton = document.getElementById("sendButton");
-    const chatBox = document.getElementById("chatBox");
-    const loadingIndicator = document.getElementById("loadingIndicator");
-    const actionButtons = document.getElementById("actionButtons");
-    let isFirstResponse = true; // Track if it's the first response
 
     // Function to render the chat history
     function renderChatHistory(history) {
@@ -55,12 +51,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const message = userInput.value.trim();
         if (message === "") return;
 
-        // Disable input and button while processing
+        // Display the user's message immediately in the chat box
+        const userMessageDiv = document.createElement("div");
+        userMessageDiv.classList.add("chat-message", "user-message");
+        userMessageDiv.textContent = message;
+        chatBox.appendChild(userMessageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+
+        // Clear the input field and disable input and button while processing
+        userInput.value = "";
         userInput.disabled = true;
         sendButton.disabled = true;
 
         // Show the loading indicator
-        loadingIndicator.classList.remove("d-none");
+        const loadingDiv = document.createElement("div");
+        loadingDiv.classList.add("chat-message", "loading-message");
+        loadingDiv.innerHTML = `
+            <span class="loading-dots">
+                <span></span><span></span><span></span>
+            </span>`;
+        chatBox.appendChild(loadingDiv);
+        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
 
         // Send the message to the server
         fetch("/chat", {
@@ -71,145 +82,30 @@ document.addEventListener("DOMContentLoaded", () => {
             .then((response) => response.json())
             .then((data) => {
                 if (data.error) {
-                    alert(data.error);
+                    console.error(data.error);
+                    loadingDiv.textContent = "An error occurred while processing your request.";
+                } else if (data.scenario) {
+                    // Scenario-based response: Display in the scenarioText section
+                    scenarioText.textContent = data.scenario || "No detailed description provided.";
+                    loadingDiv.remove(); // Remove the loading indicator
                 } else {
-                    renderChatHistory(data.history); // Render the updated chat history
-
-                    // Show action buttons after the first response
-                    if (isFirstResponse) {
-                        actionButtons.style.visibility = "visible"; // Make visible
-                        actionButtons.classList.add("show"); // Add animation class
-                        isFirstResponse = false;
-                    }
+                    // General response: Display in the chat box
+                    loadingDiv.classList.remove("loading-message");
+                    loadingDiv.classList.add("bot-message");
+                    loadingDiv.innerHTML = data.response || "No response provided.";
                 }
             })
             .catch((err) => {
                 console.error("Error:", err);
-                alert("An error occurred while processing your request.");
+                loadingDiv.textContent = "An error occurred while processing your request.";
             })
             .finally(() => {
-                // Hide the loading indicator
-                loadingIndicator.classList.add("d-none");
-
                 // Re-enable input and button
                 userInput.disabled = false;
                 sendButton.disabled = false;
-                userInput.value = ""; // Clear the input field
                 userInput.focus(); // Focus back on the input field
             });
     }
-
-    // Add event listeners for action buttons
-    actionButtons.addEventListener("click", (event) => {
-        if (event.target.tagName === "BUTTON") {
-            const action = event.target.textContent.trim();
-            alert(`Action triggered: ${action}`);
-        }
-    });
-
-    // Event listeners for sending a message
-    sendButton.addEventListener("click", sendMessage);
-    userInput.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            sendMessage();
-        }
-    });
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    const userInput = document.getElementById("userInput");
-    const sendButton = document.getElementById("sendButton");
-    const chatBox = document.getElementById("chatBox");
-    const plantumlText = document.getElementById("plantumlText");
-    const scenarioText = document.getElementById("scenarioText");
-    const loadingIndicator = document.getElementById("loadingIndicator");
-
-    // Function to process the input
-    function processInput() {
-        const input = userInput.value.trim();
-        if (!input) {
-            alert("Please enter a message.");
-            return;
-        }
-
-        // Disable input and button while processing
-        userInput.disabled = true;
-        sendButton.disabled = true;
-
-        // Show the loading indicator
-        loadingIndicator.classList.remove("d-none");
-
-        // Send the input to the server
-        fetch("/process_scenario", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: input }),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.error) {
-                    alert(data.error);
-                } else if (data.type === "general") {
-                    // Display the chatbot response for general input
-                    const botMessageDiv = document.createElement("div");
-                    botMessageDiv.classList.add("chat-message", "bot-message");
-                    botMessageDiv.textContent = data.response;
-                    chatBox.appendChild(botMessageDiv);
-                } else if (data.type === "scenario") {
-                    // Update the PlantUML content
-                    plantumlText.textContent = data.plantuml;
-
-                    // Update the scenario text content
-                    scenarioText.textContent = data.scenario;
-
-                    // Display the summary in the chatbox
-                    const summaryDiv = document.createElement("div");
-                    summaryDiv.classList.add("chat-message", "bot-message");
-                    summaryDiv.textContent = data.summary;
-                    chatBox.appendChild(summaryDiv);
-                }
-
-                chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
-            })
-            .catch((err) => {
-                console.error("Error:", err);
-                // alert("An error occurred while processing your input.");
-            })
-            .finally(() => {
-                // Hide the loading indicator
-                loadingIndicator.classList.add("d-none");
-
-                // Re-enable input and button
-                userInput.disabled = false;
-                sendButton.disabled = false;
-                userInput.value = ""; // Clear the input field
-                userInput.focus(); // Focus back on the input field
-            });
-    }
-
-    // Event listener for the send button
-    sendButton.addEventListener("click", processInput);
-
-    // Allow pressing Enter to submit the input
-    userInput.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            processInput();
-        }
-    });
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    const plantumlText = document.getElementById("plantumlText");
-    const scenarioText = document.getElementById("scenarioText");
-    const chatBox = document.getElementById("chatBox");
-    const generateScenarioButton = document.createElement("button");
-
-    // // Add a button to generate the scenario
-    // generateScenarioButton.textContent = "Generate Scenario";
-    // generateScenarioButton.classList.add("btn", "btn-primary", "mt-3");
-    // plantumlText.parentElement.appendChild(generateScenarioButton);
 
     // Function to generate a scenario from PlantUML
     function generateScenario() {
@@ -247,20 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
-    // Add event listener to the button
-    generateScenarioButton.addEventListener("click", generateScenario);
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-    const scenarioText = document.getElementById("scenarioText");
-    const plantumlText = document.getElementById("plantumlText");
-    const generateUMLButton = document.createElement("button");
-
-    // Add a button to generate UML
-    // generateUMLButton.textContent = "Generate UML";
-    // generateUMLButton.classList.add("btn", "btn-primary", "mt-3");
-    // scenarioText.parentElement.appendChild(generateUMLButton);
-
     // Function to generate UML from scenarioText
     function generateUML() {
         const scenario = scenarioText.textContent.trim();
@@ -290,6 +172,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
-    // Add event listener to the button
-    generateUMLButton.addEventListener("click", generateUML);
+    // Event listeners for sending a message
+    sendButton.addEventListener("click", sendMessage);
+    userInput.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
 });
