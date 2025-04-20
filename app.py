@@ -17,54 +17,45 @@ def home():
     chat_history = []  # Reset chat history on page load
     return render_template("index.html")
 
+# Function to handle chat messages
 @app.route("/chat", methods=["POST"])
 def chat():
+    """Handle chat messages and classify them as 'general' or 'scenario'."""
     global chat_history
     try:
-        # Get user message from the request
+        # Get user message
         user_message = request.json.get("message", "").strip()
-
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
 
         # Retrieve the user's name from the session
-        user_name = session.get("user_name", "User")
+        user_name = session.get("user_name")
+        print(f"User name from session: {user_name}")  # Debugging: Print the user name
+        if not user_name:
+            return jsonify({"error": "User name is not set. Please submit your name first."}), 400
 
         # Add the user's message to the chat history
         chat_history.append({"role": "user", "content": user_message})
 
         # Classify the input as "general" or "scenario"
         classification = classify_input(user_message)
-        print(f"Classification result: {classification}")  # Debugging: Print the classification result
 
         if classification == "general":
-            # Prepare the prompts with the chat history
-            prompts = [
-                {"role": "system", "content": f"You are a helpful assistant. The user's name is {user_name}."}
-            ] + chat_history
+            return generate_general(user_name, chat_history)
 
-            # Get the OpenAI client
-            client = OpenAIClient.get_client()
-
-            # Get response from chatbot
-            response = client.chat.completions.create(
-                model=os.getenv("GPT_MODEL"), messages=prompts
-            )
-            bot_reply = response.choices[0].message.content.strip()
-
-            # Add the bot's response to the chat history
-            chat_history.append({"role": "assistant", "content": bot_reply})
-
-            # Return the raw bot reply
-            return jsonify({"response": bot_reply, "history": chat_history})
         elif classification == "scenario":
-            # Call the generate_scenario function
-            scenario_data = generate_scenario(user_message)  # Pass the user message
-            return jsonify(scenario_data)  # Serialize the dictionary properly
+            scenario_data = generate_scenario(user_message)
+            return jsonify(scenario_data)
+
+        else:
+            # Invalid classification
+            return jsonify({"error": "Unable to classify the input. Please rephrase your query."}), 400
+
     except Exception as e:
         print(f"Error in /chat endpoint: {e}")
         return jsonify({"error": "An error occurred"}), 500
 
+# Function to handle the name submission
 @app.route("/submit_name", methods=["POST"])
 def submit_name():
     """Store the user's name in the session."""
@@ -75,10 +66,38 @@ def submit_name():
 
         # Store the name in the session
         session["user_name"] = user_name
-        return jsonify({"message": "Name stored successfully", "name": user_name})
+        return jsonify({"message": "Name saved successfully!", "name": user_name})
     except Exception as e:
         print(f"Error storing name: {e}")
         return jsonify({"error": "An error occurred while storing the name"}), 500
+
+# Function to generate a general response using GPT
+def generate_general(user_name, chat_history):
+    """Handle general input and return a response using GPT."""
+    try:
+        # Prepare the prompts with the chat history
+        prompts = [
+            {"role": "system", "content": f"You are a helpful assistant. The user's name is {user_name}."}
+        ] + chat_history
+
+        # Get the OpenAI client
+        client = OpenAIClient.get_client()
+
+        # Get response from GPT
+        response = client.chat.completions.create(
+            model=os.getenv("GPT_MODEL"), messages=prompts
+        )
+        bot_reply = response.choices[0].message.content.strip()
+
+        # Add the bot's response to the chat history
+        chat_history.append({"role": "assistant", "content": bot_reply})
+
+        # Return the raw bot reply
+        return jsonify({"response": bot_reply, "history": chat_history})
+    except Exception as e:
+        print(f"Error genreating general response: {e}")
+        return jsonify({"error": "An error occurred while processing your request."}), 500
+    
 
 def generate_scenario(scenario_text=None):
     """Generate a detailed scenario from the given user input."""

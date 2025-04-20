@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const scenarioText = document.getElementById("scenarioText");
 
     // Load saved name from sessionStorage
-    const savedName = sessionStorage.getItem("userData");
+    const savedName = sessionStorage.getItem("userName");
     if (savedName) {
         userNameInput.value = savedName;
     }
@@ -19,8 +19,27 @@ document.addEventListener("DOMContentLoaded", () => {
     submitNameBtn.addEventListener("click", () => {
         const name = userNameInput.value.trim();
         if (name) {
-            sessionStorage.setItem("userData", name);
-            console.log("Name saved:", name);
+            // Save the name in sessionStorage
+            sessionStorage.setItem("userName", name);
+
+            // Send the name to the Flask backend
+            fetch("/submit_name", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: name }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.error) {
+                        alert(data.error); // Show error message if any
+                    } else {
+                        alert(data.message); // Show success message
+                    }
+                })
+                .catch((err) => {
+                    console.error("Error:", err);
+                    alert("An error occurred while saving the name.");
+                });
         } else {
             alert("Please enter a name.");
         }
@@ -48,6 +67,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Function to send a message
     function sendMessage() {
+        // Check if the user's name is set in sessionStorage
+        const userName = sessionStorage.getItem("userName");
+        if (!userName) {
+            alert("Please enter your name before starting a conversation.");
+            // Autofocus on the name input field
+            const userNameInput = document.getElementById("userName");
+            userNameInput.focus();
+            return;
+        }
+
         const message = userInput.value.trim();
         if (message === "") return;
 
