@@ -71,7 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const userName = sessionStorage.getItem("userName");
         if (!userName) {
             alert("Please enter your name before starting a conversation.");
-            // Autofocus on the name input field
             const userNameInput = document.getElementById("userName");
             userNameInput.focus();
             return;
@@ -117,11 +116,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Scenario-based response: Display in the scenarioText section
                     scenarioText.textContent = data.scenario || "No detailed description provided.";
                     loadingDiv.remove(); // Remove the loading indicator
+
+                    // Show action buttons
+                    showActionButtons();
                 } else {
                     // General response: Display in the chat box
                     loadingDiv.classList.remove("loading-message");
                     loadingDiv.classList.add("bot-message");
                     loadingDiv.innerHTML = data.response || "No response provided.";
+
+                    // Hide action buttons if they are visible
+                    hideActionButtons();
                 }
             })
             .catch((err) => {
@@ -199,6 +204,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error:", err);
                 alert("An error occurred while generating the UML.");
             });
+    }
+
+    // Function to show action buttons
+    function showActionButtons() {
+        const actionButtons = document.getElementById("actionButtons");
+        actionButtons.innerHTML = `
+            <button id="feedbackBtn" class="btn btn-outline-warning">Feedback</button>
+            <button id="extendBtn" class="btn btn-outline-secondary">Extend</button>
+            <button id="reduceBtn" class="btn btn-outline-danger">Reduce</button>
+        `;
+
+        // Add the fade-in class for animation
+        actionButtons.classList.add("fade-in", "action-buttons");
+        actionButtons.style.visibility = "visible"; // Make the buttons visible
+
+        // Add event listeners for the buttons
+        document.getElementById("feedbackBtn").addEventListener("click", handleFeedback);
+        document.getElementById("extendBtn").addEventListener("click", handleExtend);
+        document.getElementById("reduceBtn").addEventListener("click", handleReduce);
+    }
+
+    // Function to hide action buttons
+    function hideActionButtons() {
+        const actionButtons = document.getElementById("actionButtons");
+        actionButtons.style.visibility = "hidden"; // Hide the buttons
+        actionButtons.innerHTML = ""; // Clear the buttons
+        actionButtons.classList.remove("fade-in"); // Remove the fade-in class
     }
 
     // Event listeners for sending a message

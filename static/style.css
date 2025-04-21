@@ -1,9 +1,16 @@
-/* Ensure the main content fills the viewport height */
-html, body {
-    height: 100%;
+/* General Styles */
+body {
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #f8f9fa; /* Softer background color */
     margin: 0;
     padding: 0;
-    /* overflow: hidden; Prevent scrolling */
+    color: #333; /* Default text color */
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
 /* Main Content */
@@ -16,6 +23,7 @@ html, body {
 .row {
     flex-grow: 1; /* Allow the row to grow and fill available space */
     display: flex;
+   
 }
 
 .card-body {
@@ -23,6 +31,10 @@ html, body {
     flex-direction: column;
     height: 100%; /* Ensure the card body fills its parent */
     overflow: hidden; /* Prevent overflow */
+    background: #ffffff; /* White background for cards */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    padding: 20px;
 }
 
 .chat-box, .response-area, .uml-section {
@@ -31,24 +43,25 @@ html, body {
 }
 
 .response-area {
-    height: 220px; /* Increased height */
+    height: 200px; /* Reduced height for the response area */
     background: #ffffff;
     border: 1px solid #ddd;
     padding: 15px;
     margin-top: 15px;
     border-radius: 5px;
-    overflow-y: auto; /* Ensures scrolling when content exceeds */
+    overflow-y: auto; /* Enable scrolling for long content */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle inset shadow */
 }
 
 /* Chat Box */
 .chat-box {
     height: 300px; /* Reduced height for the chatbox */
     overflow-y: auto;
-    background: #f9f9f9;
+    background: #fdfdfd; /* Slightly lighter background */
     border-radius: 10px;
     padding: 15px;
     border: 1px solid #e1e4e8;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle inset shadow */
 }
 
 /* Chat Messages */
@@ -60,6 +73,7 @@ html, body {
     font-size: 0.9rem;
     line-height: 1.4;
     word-wrap: break-word;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
 }
 
 /* User Messages */
@@ -69,7 +83,6 @@ html, body {
     text-align: right;
     margin-left: auto;
     border-radius: 15px 15px 0 15px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Bot Messages */
@@ -78,7 +91,6 @@ html, body {
     color: #333;
     text-align: left;
     border-radius: 15px 15px 15px 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Loading Dots */
@@ -124,21 +136,12 @@ html, body {
 button {
     transition: 0.3s;
     border-radius: 5px;
+    font-weight: 500;
 }
 
 button:hover {
-    opacity: 0.8;
-}
-
-/* Response Area */
-.response-area {
-    height: 200px; /* Reduced height for the response area */
-    background: #ffffff;
-    border: 1px solid #ddd;
-    padding: 15px;
-    margin-top: 15px;
-    border-radius: 5px;
-    overflow-y: auto; /* Enable scrolling for long content */
+    opacity: 0.9;
+    transform: scale(1.02); /* Slight zoom effect */
 }
 
 /* UML Section */
@@ -154,18 +157,21 @@ button:hover {
 /* Tabs */
 .nav-tabs .nav-link {
     color: #007bff;
+    font-weight: 500;
 }
 
 .nav-tabs .nav-link.active {
     background: #007bff;
     color: white;
+    border-radius: 5px 5px 0 0;
 }
 
 /* Header */
 header {
     color: white;
     padding: 15px;
-    border-radius: 5px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 /* Input Field */
@@ -174,9 +180,19 @@ header {
     border: 1px solid #ccc;
 }
 
+.input-group textarea {
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle inset shadow */
+}
+
 .input-group button {
     background-color: #007bff;
     color: white;
+    font-weight: 500;
 }
 
 /* Animation for action buttons */
@@ -191,23 +207,70 @@ header {
     }
 }
 
-/* Action Buttons */
-#actionButtons {
-    height: 40px; /* Reduced height for reserved space */
-    visibility: hidden; /* Initially hidden */
-    opacity: 0; /* Fully transparent */
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+/* Add fade-in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-#actionButtons.show {
-    visibility: visible; /* Make visible */
-    opacity: 1; /* Fade in */
+/* Apply the fade-in animation to action buttons */
+.action-buttons.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
 }
 
 #plantumlText {
-    height: 300px;
+    height: 250px;
     overflow-y: auto;
     background-color: #f8f9fa;
     padding: 1rem;
-    border-radius: 0.5rem;
+    border-radius: 0.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    border: 1px solid #ddd;
 }
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .chat-box {
+        height: 200px; /* Adjust chatbox height for smaller screens */
+    }
+    .response-area {
+        height: 150px; /* Adjust response area height for smaller screens */
+    }
+}
+
+/* Add any additional responsive styles as needed */
+@media (max-width: 576px) {
+    .main-content {
+        flex-direction: column; /* Stack elements vertically on small screens */
+    }
+    .row {
+        flex-direction: column; /* Stack rows vertically on small screens */
+    }
+    .card-body {
+        margin-bottom: 20px; /* Add space between stacked cards */
+    }
+}
+
+/* Add any additional styles for smaller screens as needed */
+@media (max-width: 400px) {
+    .chat-message {
+        font-size: 0.8rem; /* Adjust font size for smaller screens */
+    }
+    .response-area {
+        height: 120px; /* Further adjust response area height for very small screens */
+    }
+}
+
+/* Responsive UML Section */
+@media (max-width: 768px) {
+    .uml-section {
+        height: 150px; /* Adjust UML section height for smaller screens */
+    }
+}
+
