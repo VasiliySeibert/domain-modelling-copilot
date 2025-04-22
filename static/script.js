@@ -117,6 +117,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     scenarioText.textContent = data.scenario || "No detailed description provided.";
                     loadingDiv.remove(); // Remove the loading indicator
 
+                    // Display the summary in the chatbox
+                    const summaryDiv = document.createElement("div");
+                    summaryDiv.classList.add("chat-message", "bot-message");
+                    summaryDiv.textContent = data.summary || "No summary provided.";
+                    chatBox.appendChild(summaryDiv);
+                    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+
                     // Show action buttons
                     showActionButtons();
                 } else {
