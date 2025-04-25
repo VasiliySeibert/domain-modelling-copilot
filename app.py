@@ -30,7 +30,6 @@ def chat():
 
         # Retrieve the user's name from the session
         user_name = session.get("user_name")
-        print(f"User name from session: {user_name}")  # Debugging: Print the user name
         if not user_name:
             return jsonify({"error": "User name is not set. Please submit your name first."}), 400
 
@@ -100,7 +99,7 @@ def generate_general(user_name, chat_history):
     
 
 def generate_scenario(scenario_text=None):
-    """Generate a detailed scenario from the given user input."""
+    """Generate a detailed scenario and its summary from the given user input."""
     try:
         # If scenario_text is not provided, get it from the request (for direct API calls)
         if scenario_text is None:
@@ -108,9 +107,9 @@ def generate_scenario(scenario_text=None):
             if not scenario_text:
                 return jsonify({"error": "Scenario text is required"}), 400
 
-        # Use GPT to generate a detailed scenario description
+        # Use LLM to generate a detailed scenario description
         prompts = [
-            {"role": "system", "content": "You are an expert in converting user inputs into detailed scenarios."},
+            {"role": "system", "content": "You are an expert in converting user inputs into detailed scenarios.Only respond with the detailed scenario, do not add anything else like title, conclusion, etc."},
             {"role": "user", "content": f"Generate a detailed scenario for the following input:\n\n{scenario_text}"}
         ]
 
@@ -123,10 +122,20 @@ def generate_scenario(scenario_text=None):
             messages=prompts
         )
         detailed_description = response.choices[0].message.content.strip()
-        print(f"Detailed description: {detailed_description}")  # Debugging: Print the detailed description
 
-        # Return the detailed scenario as a dictionary
-        return {"scenario": detailed_description}
+        # Generate a summary of the detailed scenario
+        summary_prompts = [
+            {"role": "system", "content": "You are an expert in summarizing detailed scenarios into concise summaries. A summary should capture the essence of the scenario in one or two sentences."},
+            {"role": "user", "content": f"Summarize the following scenario in one or two sentences:\n\n{detailed_description}"}
+        ]
+        summary_response = client.chat.completions.create(
+            model=os.getenv("GPT_MODEL"),
+            messages=summary_prompts
+        )
+        summary = summary_response.choices[0].message.content.strip()
+
+        # Return the detailed scenario and summary as a dictionary
+        return {"scenario": detailed_description, "summary": summary}
     except Exception as e:
         print(f"Error generating scenario: {e}")
         return {"error": "An error occurred while generating the scenario"}

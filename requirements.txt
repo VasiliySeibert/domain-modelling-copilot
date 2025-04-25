@@ -1,5 +1,5 @@
-flask
-python-dotenv
+flask==2.2.5
+python-dotenv==1.0.0
 openai==1.70.0
-pytest
+pytest==7.4.0
 werkzeug==2.2.3
