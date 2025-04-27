@@ -68,6 +68,7 @@
                             </li>
                         </ul>
                         <div class="response-area border rounded p-3 mb-3">
+                            <div id="scenarioLoading" class="loading-spinner d-none"></div>
                             <p id="scenarioText" class="mb-0">Your detailed scenario will be displayed here.</p>
                         </div>
 
@@ -85,9 +86,8 @@
                         <div class="tab-content mt-3">
                             <!-- PlantUML Content -->
                             <div class="tab-pane fade show active" id="plantuml-content">
-                                <pre id="plantumlText" style="overflow-y: auto; background-color: #f8f9fa; padding: 1rem;" class="border rounded">
-                                    PlantUML Text will be displayed here
-                                </pre>
+                                <div id="plantumlText" class="uml-section">
+                                </div>
                             </div>
 
                             <!-- Domain Model Content -->
