@@ -74,6 +74,8 @@ body {
     line-height: 1.4;
     word-wrap: break-word;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
 }
 
 /* User Messages */
@@ -272,5 +274,14 @@ header {
     .uml-section {
         height: 150px; /* Adjust UML section height for smaller screens */
     }
+}
+
+.action-buttons {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.action-buttons.fade-in {
+    opacity: 1;
 }
 

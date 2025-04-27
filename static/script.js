@@ -67,15 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Function to send a message
     function sendMessage() {
-        // Check if the user's name is set in sessionStorage
-        const userName = sessionStorage.getItem("userName");
-        if (!userName) {
-            alert("Please enter your name before starting a conversation.");
-            const userNameInput = document.getElementById("userName");
-            userNameInput.focus();
-            return;
-        }
-
         const message = userInput.value.trim();
         if (message === "") return;
 
@@ -113,27 +104,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.error(data.error);
                     loadingDiv.textContent = "An error occurred while processing your request.";
                 } else if (data.scenario) {
-                    // Scenario-based response: Display in the scenarioText section
+                    // Remove the loading indicator
+                    loadingDiv.remove();
+
+                    // Display the scenario text in the scenarioText section
                     scenarioText.textContent = data.scenario || "No detailed description provided.";
-                    loadingDiv.remove(); // Remove the loading indicator
 
-                    // Display the summary in the chatbox
-                    const summaryDiv = document.createElement("div");
-                    summaryDiv.classList.add("chat-message", "bot-message");
-                    summaryDiv.textContent = data.summary || "No summary provided.";
-                    chatBox.appendChild(summaryDiv);
-                    chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+                    // Display the bot's response word by word
+                    const botMessageDiv = document.createElement("div");
+                    botMessageDiv.classList.add("chat-message", "bot-message");
+                    chatBox.appendChild(botMessageDiv);
 
-                    // Show action buttons
-                    showActionButtons();
+                    const words = data.summary.split(" ");
+                    let index = 0;
+
+                    function displayNextWord() {
+                        if (index < words.length) {
+                            botMessageDiv.textContent += words[index] + " ";
+                            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to the latest message
+                            index++;
+                            setTimeout(displayNextWord, 50); // Faster word display speed
+                        }
+                    }
+
+                    displayNextWord();
                 } else {
                     // General response: Display in the chat box
                     loadingDiv.classList.remove("loading-message");
                     loadingDiv.classList.add("bot-message");
                     loadingDiv.innerHTML = data.response || "No response provided.";
-
-                    // Hide action buttons if they are visible
-                    hideActionButtons();
                 }
             })
             .catch((err) => {
@@ -216,15 +215,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // Function to show action buttons
     function showActionButtons() {
         const actionButtons = document.getElementById("actionButtons");
+
+        // Add buttons dynamically
         actionButtons.innerHTML = `
             <button id="feedbackBtn" class="btn btn-outline-warning">Feedback</button>
             <button id="extendBtn" class="btn btn-outline-secondary">Extend</button>
             <button id="reduceBtn" class="btn btn-outline-danger">Reduce</button>
         `;
 
-        // Add the fade-in class for animation
+        // Make the buttons visible and apply the fade-in animation
+        actionButtons.style.visibility = "visible"; // Ensure visibility
+        actionButtons.style.opacity = "1"; // Ensure opacity for fade-in effect
         actionButtons.classList.add("fade-in", "action-buttons");
-        actionButtons.style.visibility = "visible"; // Make the buttons visible
 
         // Add event listeners for the buttons
         document.getElementById("feedbackBtn").addEventListener("click", handleFeedback);
@@ -235,7 +237,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // Function to hide action buttons
     function hideActionButtons() {
         const actionButtons = document.getElementById("actionButtons");
-        actionButtons.style.visibility = "hidden"; // Hide the buttons
+
+        // Hide the buttons and reset their content
+        actionButtons.style.visibility = "hidden";
+        actionButtons.style.opacity = "0"; // Fade out effect
         actionButtons.innerHTML = ""; // Clear the buttons
         actionButtons.classList.remove("fade-in"); // Remove the fade-in class
     }

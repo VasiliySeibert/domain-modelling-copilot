@@ -10,6 +10,7 @@ app.secret_key = "supersecretkey"  # Required for session handling
 OpenAIClient.initialize()
 
 chat_history = []
+scenario = []  # Stores all scenarios generated during the chat session
 
 @app.route("/")
 def home():
@@ -21,7 +22,7 @@ def home():
 @app.route("/chat", methods=["POST"])
 def chat():
     """Handle chat messages and classify them as 'general' or 'scenario'."""
-    global chat_history
+    global chat_history, scenario
     try:
         # Get user message
         user_message = request.json.get("message", "").strip()
@@ -40,11 +41,27 @@ def chat():
         classification = classify_input(user_message)
 
         if classification == "general":
-            return generate_general(user_name, chat_history)
+            # Generate a general response
+            response = generate_general(user_name, chat_history)
+            bot_reply = response.json["response"]
+            chat_history.append({"role": "assistant", "content": bot_reply})
+            return response
 
         elif classification == "scenario":
-            scenario_data = generate_scenario(user_message)
-            return jsonify(scenario_data)
+            # Generate the detailed scenario
+            detailed_description = generate_scenario(user_message)
+
+            # Generate the summary from the detailed scenario
+            summary = generate_summary(detailed_description)
+
+            # Store the scenario in the global list
+            scenario.append(detailed_description)
+
+            # Add the scenario and summary to the chat history
+            chat_history.append({"role": "assistant", "content": summary})
+
+            # Return both the detailed scenario and the summary
+            return jsonify({"scenario": detailed_description, "summary": summary})
 
         else:
             # Invalid classification
@@ -99,7 +116,7 @@ def generate_general(user_name, chat_history):
     
 
 def generate_scenario(scenario_text=None):
-    """Generate a detailed scenario and its summary from the given user input."""
+    """Generate a detailed scenario from the given user input."""
     try:
         # If scenario_text is not provided, get it from the request (for direct API calls)
         if scenario_text is None:
@@ -109,7 +126,7 @@ def generate_scenario(scenario_text=None):
 
         # Use LLM to generate a detailed scenario description
         prompts = [
-            {"role": "system", "content": "You are an expert in converting user inputs into detailed scenarios.Only respond with the detailed scenario, do not add anything else like title, conclusion, etc."},
+            {"role": "system", "content": "You are an expert in converting user inputs into detailed scenarios. Only respond with the detailed scenario, do not add anything else like title, conclusion, etc."},
             {"role": "user", "content": f"Generate a detailed scenario for the following input:\n\n{scenario_text}"}
         ]
 
@@ -123,22 +140,11 @@ def generate_scenario(scenario_text=None):
         )
         detailed_description = response.choices[0].message.content.strip()
 
-        # Generate a summary of the detailed scenario
-        summary_prompts = [
-            {"role": "system", "content": "You are an expert in summarizing detailed scenarios into concise summaries. A summary should capture the essence of the scenario in one or two sentences."},
-            {"role": "user", "content": f"Summarize the following scenario in one or two sentences:\n\n{detailed_description}"}
-        ]
-        summary_response = client.chat.completions.create(
-            model=os.getenv("GPT_MODEL"),
-            messages=summary_prompts
-        )
-        summary = summary_response.choices[0].message.content.strip()
-
-        # Return the detailed scenario and summary as a dictionary
-        return {"scenario": detailed_description, "summary": summary}
+        # Return the detailed scenario
+        return detailed_description
     except Exception as e:
         print(f"Error generating scenario: {e}")
-        return {"error": "An error occurred while generating the scenario"}
+        return "An error occurred while generating the scenario."
 
 @app.route("/generate_uml", methods=["POST"])
 def generate_uml():
@@ -171,6 +177,18 @@ def generate_summary():
             return jsonify({"error": "Detailed description is required"}), 400
 
         # Use GPT to generate a summary
+        summary = generate_summary(detailed_description)
+
+        # Return the summary
+        return jsonify({"summary": summary})
+    except Exception as e:
+        print(f"Error generating summary: {e}")
+        return jsonify({"error": "An error occurred while generating the summary"}), 500
+
+def generate_summary(detailed_description):
+    """Generate a summary from the given detailed scenario."""
+    try:
+        # Use GPT to generate a summary
         prompts = [
             {"role": "system", "content": "You are an expert in summarizing detailed scenarios into concise summaries. A summary should capture the essence of the scenario in one or two sentences."},
             {"role": "user", "content": f"Summarize the following scenario in one or two sentences:\n\n{detailed_description}"}
@@ -187,10 +205,10 @@ def generate_summary():
         summary = response.choices[0].message.content.strip()
 
         # Return the summary
-        return jsonify({"summary": summary})
+        return summary
     except Exception as e:
         print(f"Error generating summary: {e}")
-        return jsonify({"error": "An error occurred while generating the summary"}), 500
+        return "An error occurred while generating the summary."
 
 def classify_input(user_message):
     """Classify the user input as 'general' or 'scenario'."""
@@ -215,6 +233,11 @@ def classify_input(user_message):
         print(f"Error classifying input: {e}")
         return "general"  # Default to "general" in case of an error
 
+@app.route("/get_scenarios", methods=["GET"])
+def get_scenarios():
+    """Retrieve all stored scenarios."""
+    global scenario
+    return jsonify({"scenarios": scenario})
 
 if __name__ == "__main__":
     app.run(debug=True)
