@@ -27,7 +27,7 @@ def chat():
         # Get user message
         user_message = request.json.get("message", "").strip()
         if not user_message:
-            return jsonify({"error": "Message is required"}), 400
+            return jsonify({"error": "Message is required. Please enter a valid message."}), 400
 
         # Retrieve the user's name from the session
         user_name = session.get("user_name")
@@ -69,7 +69,7 @@ def chat():
 
     except Exception as e:
         print(f"Error in /chat endpoint: {e}")
-        return jsonify({"error": "An error occurred"}), 500
+        return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 
 # Function to handle the name submission
 @app.route("/submit_name", methods=["POST"])
@@ -126,8 +126,19 @@ def generate_scenario(scenario_text=None):
 
         # Use LLM to generate a detailed scenario description
         prompts = [
-            {"role": "system", "content": "You are an expert in converting user inputs into detailed scenarios. Only respond with the detailed scenario, do not add anything else like title, conclusion, etc."},
-            {"role": "user", "content": f"Generate a detailed scenario for the following input:\n\n{scenario_text}"}
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert in domain modeling and UML class diagram generation. "
+                    "Your task is to convert user inputs into clear and concise scenarios that include relevant entities, attributes, and relationships. "
+                    "Ensure the scenario is easy to understand for a non-technical user while being structured enough for generating UML diagrams. "
+                    "Do not include unnecessary details, titles, or conclusions."
+                )
+            },
+            {
+                "role": "user",
+                "content": f"Generate a clear and structured scenario for the following input:\n\n{scenario_text}"
+            }
         ]
 
         # Get the OpenAI client
