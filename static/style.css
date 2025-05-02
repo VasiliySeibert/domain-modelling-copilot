@@ -4,14 +4,14 @@ body, html {
     padding: 0;
     overflow-x: hidden; /* Prevent horizontal scrolling */
     width: 100%; /* Ensure the width does not exceed the viewport */
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #f8f9fa; /* Softer background color */
+    color: #333; /* Default text color */
 }
 
 body {
-    font-family: 'Roboto', Arial, sans-serif;
-    background-color: #f8f9fa; /* Softer background color */
     margin: 0;
     padding: 0;
-    color: #333; /* Default text color */
 }
 
 .container {
@@ -28,7 +28,6 @@ body {
 
 /* Main Content */
 .main-content {
-    height: 90vh; /* Reduced height to 90% of the viewport */
     display: flex;
     flex-direction: column;
 }
@@ -38,7 +37,6 @@ body {
     display: flex;
     flex-wrap: wrap; /* Ensure rows wrap to the next line if needed */
     margin: 0; /* Remove any default margin that might cause overflow */
-   
 }
 
 .card-body {
@@ -46,7 +44,6 @@ body {
     flex-direction: column;
     height: 100%; /* Ensure the card body fills its parent */
     overflow: hidden; /* Prevent overflow */
-    overflow-x: hidden; /* Prevent horizontal overflow inside cards */
     background: #ffffff; /* White background for cards */
     border-radius: 10px; /* Rounded corners */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
@@ -261,6 +258,9 @@ header {
     .response-area {
         height: 150px; /* Adjust response area height for smaller screens */
     }
+    .uml-section {
+        height: 150px; /* Adjust UML section height for smaller screens */
+    }
 }
 
 /* Add any additional responsive styles as needed */
@@ -283,13 +283,6 @@ header {
     }
     .response-area {
         height: 120px; /* Further adjust response area height for very small screens */
-    }
-}
-
-/* Responsive UML Section */
-@media (max-width: 768px) {
-    .uml-section {
-        height: 150px; /* Adjust UML section height for smaller screens */
     }
 }
 
@@ -341,5 +334,10 @@ header {
 
 #actionButtons {
     transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    visibility: hidden;
+}
+
+#actionButtons.show {
+    visibility: visible;
 }
 
