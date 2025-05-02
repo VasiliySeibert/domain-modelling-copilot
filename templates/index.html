@@ -20,8 +20,11 @@
             <div class="d-flex align-items-center">
                 <input type="text" class="form-control me-2" id="userName" placeholder="Enter Name" >
                 <button class="btn btn-outline-primary me-3" id="submitNameBtn">Submit</button>
-            </div>            
-            <button class="btn btn-success w-75">Search Queries</button>
+            </div>
+            <div class="dropdown position-relative d-inline-block" style="margin-bottom: 10px; margin-right: 10px;">
+                <button class="btn btn-success" id="selectFileBtn">Select File</button>
+                <select id="wordFileList" class="form-select d-none" style="margin: 10px;"></select>
+            </div>                      
         </header>
 
         <!-- Main Content -->

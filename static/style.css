@@ -285,3 +285,61 @@ header {
     opacity: 1;
 }
 
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button {
+    margin: 5px;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.action-buttons button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+} 
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:disabled {
+    background-color: #ccc; /* Disabled button color */
+    cursor: not-allowed;
+}
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:disabled:hover {
+    background-color: #ccc; /* Prevent hover effect on disabled button */
+}
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:active {
+    background-color: #003366; /* Active button color */
+}
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:active:hover {
+    background-color: #003366; /* Prevent hover effect on active button */
+}
+
+#actionButtons {
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    visibility: hidden;
+}
+
+#actionButtons.show {
+    visibility: visible;
+}
+
+#wordFileList{
+    position: absolute;
+            top: 100%;
+            left: 0;
+            width: 220px;
+            z-index: 1050;
+            max-height: 180px;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 14px;
+            margin: 10px;;
+}

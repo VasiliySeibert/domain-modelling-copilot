@@ -240,17 +240,89 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Hide the buttons and reset their content
         actionButtons.style.visibility = "hidden";
-        actionButtons.style.opacity = "0"; // Fade out effect
-        actionButtons.innerHTML = ""; // Clear the buttons
-        actionButtons.classList.remove("fade-in"); // Remove the fade-in class
+        actionButtons.style.opacity = "0";
     }
 
-    // Event listeners for sending a message
-    sendButton.addEventListener("click", sendMessage);
-    userInput.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            sendMessage();
+    // Display error messages
+    function displayErrorMessage(errorText) {
+        const errorDiv = document.createElement("div");
+        errorDiv.classList.add("chat-message", "error-message");
+        errorDiv.textContent = errorText;
+        chatBox.appendChild(errorDiv);
+        autoScrollChatBox();
+    }
+
+    let lastSelectedFile = null;
+
+    document.getElementById("selectFileBtn").addEventListener("click", async () => {
+        const selectList = document.getElementById("wordFileList");
+        try {
+            const response = await fetch("/list_word_files");
+            const data = await response.json();
+            selectList.innerHTML = "";
+    
+            if (data.files.length === 0) {
+                selectList.classList.add("d-none");
+                alert("No Word files found.");
+                return;
+            }
+    
+            data.files.forEach(file => {
+                const option = document.createElement("option");
+                option.value = file;
+                option.textContent = file;
+                selectList.appendChild(option);
+            });
+    
+            selectList.classList.remove("d-none");
+        } catch (error) {
+            console.error("Error loading word files:", error);
         }
     });
+    
+    document.getElementById("wordFileList").addEventListener("change", async (e) => {
+        const selectedFile = e.target.value;
+        if (!selectedFile) return;
+    
+        const confirmed = confirm("Changing the file will replace the current scenario text. Continue?");
+        if (!confirmed) {
+            e.target.value = "";  // Reset selection if canceled
+            return;
+        }
+    
+        try {
+            const response = await fetch(`/read_word/${selectedFile}`);
+            const data = await response.json();
+    
+            if (data.content) {
+                document.getElementById("scenarioText").textContent = data.content;
+                lastSelectedFile = selectedFile;
+                document.getElementById("wordFileList").classList.add("d-none"); // Hide dropdown
+            } else {
+                alert("Failed to load file content.");
+            }
+        } catch (err) {
+            console.error("Error loading file content:", err);
+        }
+    });
+
+
+    // Display default PlantUML
+    function displayDefaultPlantUML() {
+        plantumlText.textContent = `@startuml
+class User {
+    +name: String
+    +email: String
+    +login(): void
+}
+
+class Product {
+    +id: int
+    +name: String
+    +price: float
+}
+
+User "1" -- "0..*" Product : purchases
+@enduml`;
+    }
 });

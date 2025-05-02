@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, jsonify, session
 from openai_client import OpenAIClient  # Utility class
 from gpt2 import gpt_v2_interface
+from docx import Document
+from flask import send_from_directory
 import os
 
 app = Flask(__name__)
@@ -53,11 +55,9 @@ def chat():
 
             # Generate the summary from the detailed scenario
             summary = generate_summary(detailed_description)
-
-            # Store the scenario in the global list
-            scenario.append(detailed_description)
-
-            # Add the scenario and summary to the chat history
+            scenarios.append(detailed_description)
+            filename = f"{user_name}_scenario_{len(scenarios)}.docx"
+            save_scenario_to_word(detailed_description, filename)
             chat_history.append({"role": "assistant", "content": summary})
 
             # Return both the detailed scenario and the summary
@@ -209,6 +209,46 @@ def generate_summary(detailed_description):
     except Exception as e:
         print(f"Error generating summary: {e}")
         return "An error occurred while generating the summary."
+
+def save_scenario_to_word(scenario_text, filename="scenario.docx"):
+    project_dir = os.path.join(os.getcwd(), "project")
+    os.makedirs(project_dir, exist_ok=True)
+
+    file_path = os.path.join(project_dir, filename)
+    doc = Document()
+    doc.add_heading("Generated Scenario", 0)
+    doc.add_paragraph(scenario_text)
+    doc.save(file_path)
+    return file_path
+
+@app.route("/list_word_files", methods=["GET"])
+def list_word_files():
+    project_dir = os.path.join(os.getcwd(), "project")
+    if not os.path.exists(project_dir):
+        return jsonify({"files": []})
+    files = [f for f in os.listdir(project_dir) if f.endswith(".docx")]
+    return jsonify({"files": files})
+
+@app.route("/download_word/<filename>")
+def download_word(filename):
+    project_dir = os.path.join(os.getcwd(), "project")
+    return send_from_directory(directory=project_dir, path=filename, as_attachment=True)
+
+@app.route("/read_word/<filename>", methods=["GET"])
+def read_word(filename):
+    try:
+        project_dir = os.path.join(os.getcwd(), "project")
+        file_path = os.path.join(project_dir, filename)
+
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found"}), 404
+
+        doc = Document(file_path)
+        full_text = "\n".join([para.text for para in doc.paragraphs])
+        return jsonify({"content": full_text})
+    except Exception as e:
+        print(f"Error reading Word file: {e}")
+        return jsonify({"error": "Failed to read file"}), 500
 
 def classify_input(user_message):
     """Classify the user input as 'general' or 'scenario'."""
