@@ -134,7 +134,13 @@ document.addEventListener("DOMContentLoaded", () => {
     function appendMessage(role, content) {
         const messageDiv = document.createElement("div");
         messageDiv.classList.add("chat-message", `${role}-message`);
-        messageDiv.textContent = content;
+
+        // Render Markdown content using marked.js
+        if (role === "bot") {
+            messageDiv.innerHTML = marked.parse(content); // Convert Markdown to HTML
+        } else {
+            messageDiv.textContent = content; // Plain text for user messages
+        }
 
         chatBox.appendChild(messageDiv);
         autoScrollChatBox(); // Auto-scroll after appending the message
@@ -172,9 +178,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 botMessageDiv.textContent += words[index] + " ";
                 index++;
                 autoScrollChatBox(); // Auto-scroll after adding each word
-                setTimeout(displayNextWord, 50); // Adjust delay as needed
-            } else if (callback) {
-                callback();
+                setTimeout(displayNextWord, 30); // Adjust delay as needed
+            } else {
+                // Render Markdown after the full response is displayed
+                botMessageDiv.innerHTML = marked.parse(botMessageDiv.textContent);
+                if (callback) {
+                    callback();
+                }
             }
         }
 

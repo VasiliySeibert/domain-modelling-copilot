@@ -341,3 +341,41 @@ header {
     visibility: visible;
 }
 
+/* Markdown Styling */
+.chat-message.bot-message {
+    font-family: 'Roboto', Arial, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.chat-message.bot-message h1,
+.chat-message.bot-message h2,
+.chat-message.bot-message h3 {
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+.chat-message.bot-message p {
+    margin: 5px 0;
+}
+
+.chat-message.bot-message ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+
+.chat-message.bot-message code {
+    background-color: #f4f4f4;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.chat-message.bot-message pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: 'Courier New', Courier, monospace;
+}
+
