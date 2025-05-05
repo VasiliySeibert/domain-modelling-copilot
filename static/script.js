@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     displayBotMessageWordByWord(data.summary, showActionButtons);
                 } else {
                     // General response
-                    appendMessage("bot", data.response || "No response provided.");
+                    displayBotMessageWordByWord(data.response || "No response provided.");
                 }
             })
             .catch((err) => {
@@ -135,8 +135,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const messageDiv = document.createElement("div");
         messageDiv.classList.add("chat-message", `${role}-message`);
         messageDiv.textContent = content;
+
         chatBox.appendChild(messageDiv);
-        autoScrollChatBox();
+        autoScrollChatBox(); // Auto-scroll after appending the message
     }
 
     // Toggle input and send button
@@ -170,6 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (index < words.length) {
                 botMessageDiv.textContent += words[index] + " ";
                 index++;
+                autoScrollChatBox(); // Auto-scroll after adding each word
                 setTimeout(displayNextWord, 50); // Adjust delay as needed
             } else if (callback) {
                 callback();
