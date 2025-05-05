@@ -1,10 +1,17 @@
 /* General Styles */
-body {
-    font-family: 'Roboto', Arial, sans-serif;
-    background-color: #f8f9fa; /* Softer background color */
+body, html {
     margin: 0;
     padding: 0;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+    width: 100%; /* Ensure the width does not exceed the viewport */
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #f8f9fa; /* Softer background color */
     color: #333; /* Default text color */
+}
+
+body {
+    margin: 0;
+    padding: 0;
 }
 
 .container {
@@ -13,9 +20,14 @@ body {
     padding: 20px;
 }
 
+.container-fluid {
+    max-width: 100%; 
+    margin: 0 auto; /* Center the container */
+    padding: 0 10px; /* Add some padding for spacing */
+}
+
 /* Main Content */
 .main-content {
-    height: 90vh; /* Reduced height to 90% of the viewport */
     display: flex;
     flex-direction: column;
 }
@@ -23,7 +35,8 @@ body {
 .row {
     flex-grow: 1; /* Allow the row to grow and fill available space */
     display: flex;
-   
+    flex-wrap: wrap; /* Ensure rows wrap to the next line if needed */
+    margin: 0; /* Remove any default margin that might cause overflow */
 }
 
 .card-body {
@@ -74,6 +87,8 @@ body {
     line-height: 1.4;
     word-wrap: break-word;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
 }
 
 /* User Messages */
@@ -232,6 +247,7 @@ header {
     border-radius: 0.5rem;
     font-family: 'Courier New', Courier, monospace;
     border: 1px solid #ddd;
+    white-space: pre-wrap; /* Preserve formatting for PlantUML text */
 }
 
 /* Responsive Styles */
@@ -241,6 +257,9 @@ header {
     }
     .response-area {
         height: 150px; /* Adjust response area height for smaller screens */
+    }
+    .uml-section {
+        height: 150px; /* Adjust UML section height for smaller screens */
     }
 }
 
@@ -267,10 +286,96 @@ header {
     }
 }
 
-/* Responsive UML Section */
-@media (max-width: 768px) {
-    .uml-section {
-        height: 150px; /* Adjust UML section height for smaller screens */
-    }
+.action-buttons {
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.action-buttons.fade-in {
+    opacity: 1;
+}
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button {
+    margin: 5px;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.action-buttons button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+} 
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:disabled {
+    background-color: #ccc; /* Disabled button color */
+    cursor: not-allowed;
+}
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:disabled:hover {
+    background-color: #ccc; /* Prevent hover effect on disabled button */
+}
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:active {
+    background-color: #003366; /* Active button color */
+}
+
+/* Add any additional styles for the action buttons as needed */
+.action-buttons button:active:hover {
+    background-color: #003366; /* Prevent hover effect on active button */
+}
+
+#actionButtons {
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    visibility: hidden;
+}
+
+#actionButtons.show {
+    visibility: visible;
+}
+
+/* Markdown Styling */
+.chat-message.bot-message {
+    font-family: 'Roboto', Arial, sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.chat-message.bot-message h1,
+.chat-message.bot-message h2,
+.chat-message.bot-message h3 {
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+.chat-message.bot-message p {
+    margin: 5px 0;
+}
+
+.chat-message.bot-message ul {
+    margin: 5px 0;
+    padding-left: 20px;
+}
+
+.chat-message.bot-message code {
+    background-color: #f4f4f4;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.chat-message.bot-message pre {
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: 'Courier New', Courier, monospace;
 }
 
