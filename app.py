@@ -98,9 +98,11 @@ def generate_scenario(scenario_text):
             {
                 "role": "system",
                 "content": (
-                    "You are an expert in domain modeling and UML class diagram generation. "
-                    "Your task is to convert user inputs into clear and concise scenarios that include relevant entities, attributes, and relationships."
-                    "Do not include Title, or any other unnecessary information in the output."
+                    "You are a domain modeling copilot. Your task is to generate clear and structured natural language descriptions of domain models based on user input."
+                    "You describe entities, their relationships, and their components in a professional and informative way, similar to product or business documentation."
+                    "Use the following style as a reference:"
+                    "In our action camera store, we specialize in cameras designed for adventurers and professionals seeking rugged and versatile solutions to capture their journeys. The inclusion of different models like ActionCamPro and AdventureCamX caters to a comprehensive range of activities and environments..."
+                    "Use this style to generate similar descriptions for other domains based on user input."
                 )
             },
             {"role": "user", "content": f"Generate a clear and structured scenario for the following input:\n\n{scenario_text}"}
@@ -148,7 +150,10 @@ def generate_summary(detailed_description):
     """Generate a summary from the given detailed scenario."""
     try:
         prompts = [
-            {"role": "system", "content": "Summarize the following scenario in one or two sentences."},
+            {"role": "system", "content": 
+                "Summarize the following scenario in one sentence."
+                "At last ask something in next line. For example, 'Is there anything else I can help you with?'"
+            },
             {"role": "user", "content": f"Summarize the following scenario:\n\n{detailed_description}"}
         ]
 
