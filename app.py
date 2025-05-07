@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session
 from openai_client import OpenAIClient  # Utility class
 from gpt2 import gpt_v2_interface
+from pymongo import MongoClient
 import os
 
 app = Flask(__name__)
@@ -8,6 +9,12 @@ app.secret_key = "supersecretkey"  # Required for session handling
 
 # Initialize the OpenAI client once
 OpenAIClient.initialize()
+
+# MongoDB setup
+MONGO_URI = "mongodb://localhost:27017/"
+client = MongoClient(MONGO_URI)
+db = client["domain_modelling_copilot"]  # Database name
+projects_collection = db["projects"]  # Collection name for projects
 
 chat_history = []
 scenarios = []  # Stores all scenarios generated during the chat session
@@ -175,6 +182,134 @@ def classify_input(user_message):
 def get_scenarios():
     """Retrieve all stored scenarios."""
     return jsonify({"scenarios": scenarios})
+
+@app.route("/submit_to_database", methods=["POST"])
+def submit_to_database():
+    """Submit work results to MongoDB."""
+    try:
+        data = request.json
+        project_name = data.get("project_name", "").strip()
+        file_name = data.get("file_name", "").strip()
+        username = data.get("username", "").strip()
+        scenario = data.get("scenario", "").strip()
+        plant_uml = data.get("plant_uml", "").strip()
+        chat_history = data.get("chat_history", [])
+
+        # Validate required fields
+        if not project_name or not file_name:
+            return jsonify({"error": "Project name and file name are required."}), 400
+
+        # Check if the project exists
+        project = projects_collection.find_one({"project_name": project_name})
+        if not project:
+            return jsonify({"error": "Project does not exist."}), 404
+
+        # Check if the file exists in the project
+        if file_name not in project.get("files", []):
+            return jsonify({"error": "File does not exist in the selected project."}), 404
+
+        # Prepare the document to insert
+        work_data = {
+            "project_name": project_name,
+            "file_name": file_name,
+            "username": username,
+            "scenario": scenario,
+            "plant_uml": plant_uml,
+            "chat_history": chat_history,
+        }
+
+        # Insert into MongoDB
+        result = projects_collection.insert_one(work_data)
+        return jsonify({"message": "Work result saved successfully!", "id": str(result.inserted_id)})
+    except Exception as e:
+        print(f"Error saving to database: {e}")
+        return jsonify({"error": "An error occurred while saving to the database."}), 500
+
+@app.route("/get_projects", methods=["GET"])
+def get_projects():
+    """Fetch the list of existing projects from the database."""
+    try:
+        # Fetch distinct project names from the database
+        projects = projects_collection.distinct("project_name")
+        return jsonify({"projects": projects})
+    except Exception as e:
+        print(f"Error fetching projects: {e}")
+        return jsonify({"error": "An error occurred while fetching projects."}), 500
+
+@app.route("/create_project", methods=["POST"])
+def create_project():
+    """Create a new project in the database."""
+    try:
+        data = request.json
+        project_name = data.get("project_name", "").strip()
+
+        # Validate project name
+        if not project_name:
+            return jsonify({"error": "Project name is required."}), 400
+
+        # Check if the project already exists
+        existing_project = projects_collection.find_one({"project_name": project_name})
+        if existing_project:
+            return jsonify({"error": "Project already exists."}), 400
+
+        # Insert the new project into the database
+        projects_collection.insert_one({"project_name": project_name, "files": []})
+        return jsonify({"message": "Project created successfully!"})
+    except Exception as e:
+        print(f"Error creating project: {e}")
+        return jsonify({"error": "An error occurred while creating the project."}), 500
+
+@app.route("/create_file", methods=["POST"])
+def create_file():
+    """Create a new file in the selected project."""
+    try:
+        data = request.json
+        project_name = data.get("project_name", "").strip()
+        file_name = data.get("file_name", "").strip()
+
+        # Validate inputs
+        if not project_name or not file_name:
+            return jsonify({"error": "Project name and file name are required."}), 400
+
+        # Check if the project exists
+        project = projects_collection.find_one({"project_name": project_name})
+        if not project:
+            return jsonify({"error": "Project does not exist."}), 404
+
+        # Check if the file already exists in the project
+        if file_name in project.get("files", []):
+            return jsonify({"error": "File already exists in this project."}), 400
+
+        # Add the file to the project's file list
+        projects_collection.update_one(
+            {"project_name": project_name},
+            {"$push": {"files": file_name}}
+        )
+        return jsonify({"message": "File created successfully!"})
+    except Exception as e:
+        print(f"Error creating file: {e}")
+        return jsonify({"error": "An error occurred while creating the file."}), 500
+
+@app.route("/get_files", methods=["GET"])
+def get_files():
+    """Fetch the list of files for a selected project."""
+    try:
+        project_name = request.args.get("project_name", "").strip()
+
+        # Validate project name
+        if not project_name:
+            return jsonify({"error": "Project name is required."}), 400
+
+        # Fetch the project from the database
+        project = projects_collection.find_one({"project_name": project_name})
+        if not project:
+            return jsonify({"error": "Project does not exist."}), 404
+
+        # Return the list of files
+        return jsonify({"files": project.get("files", [])})
+    except Exception as e:
+        print(f"Error fetching files: {e}")
+        return jsonify({"error": "An error occurred while fetching files."}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)

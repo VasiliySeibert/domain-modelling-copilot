@@ -10,6 +10,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const plantumlText = document.getElementById("plantumlText");
     const scenarioText = document.getElementById("scenarioText");
     const actionButtons = document.getElementById("actionButtons");
+    const existingProjects = document.getElementById("existingProjects");
+    const newProjectName = document.getElementById("newProjectName");
+    const createProjectBtn = document.getElementById("createProjectBtn");
+    const projectFiles = document.getElementById("projectFiles");
+    const createFileBtn = document.getElementById("createFileBtn");
+    const confirmSelectionBtn = document.getElementById("confirmSelectionBtn");
+    const submitToDatabaseBtn = document.getElementById("submitToDatabaseBtn");
 
     // ============================
     // Initialization
@@ -23,6 +30,60 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize default PlantUML
     displayDefaultPlantUML();
 
+    // Fetch projects from the backend and populate the dropdown
+    function fetchProjects() {
+        fetch("/get_projects")
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    populateProjects(data.projects);
+                }
+            })
+            .catch((err) => {
+                console.error("Error fetching projects:", err);
+                alert("An error occurred while fetching projects.");
+            });
+    }
+
+    // Populate the projects dropdown
+    function populateProjects(projects) {
+        existingProjects.innerHTML = '<option value="" disabled selected>Select a project</option>';
+        projects.forEach((project) => {
+            const option = document.createElement("option");
+            option.value = project;
+            option.textContent = project;
+            existingProjects.appendChild(option);
+        });
+    }
+
+    // Call fetchProjects on page load
+    fetchProjects();
+
+    // Populate files for the selected project
+    function populateFiles(projectName) {
+        fetch(`/get_files?project_name=${encodeURIComponent(projectName)}`)
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    projectFiles.innerHTML = '<option value="" disabled selected>Select a file</option>';
+                    data.files.forEach((file) => {
+                        const option = document.createElement("option");
+                        option.value = file;
+                        option.textContent = file;
+                        projectFiles.appendChild(option);
+                    });
+                }
+            })
+            .catch((err) => {
+                console.error("Error fetching files:", err);
+                alert("An error occurred while fetching files.");
+            });
+    }
+
     // ============================
     // Event Listeners
     // ============================
@@ -33,6 +94,133 @@ document.addEventListener("DOMContentLoaded", () => {
             event.preventDefault();
             sendMessage();
         }
+    });
+    createProjectBtn.addEventListener("click", () => {
+        const projectName = newProjectName.value.trim();
+        if (!projectName) {
+            alert("Please enter a project name.");
+            return;
+        }
+
+        // Send the project name to the backend
+        fetch("/create_project", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ project_name: projectName }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert("Project created successfully!");
+                    newProjectName.value = ""; // Clear the input field
+                    fetchProjects(); // Refresh the projects dropdown
+                }
+            })
+            .catch((err) => {
+                console.error("Error creating project:", err);
+                alert("An error occurred while creating the project.");
+            });
+    });
+
+    // Event: Populate files when a project is selected
+    existingProjects.addEventListener("change", (event) => {
+        const selectedProject = event.target.value;
+        populateFiles(selectedProject);
+    });
+
+    // Event: Create new file in the selected project
+    createFileBtn.addEventListener("click", () => {
+        const selectedProject = existingProjects.value;
+        if (!selectedProject) {
+            alert("Please select a project first.");
+            return;
+        }
+
+        const fileName = prompt("Enter the file name:");
+        if (!fileName) {
+            alert("File name cannot be empty.");
+            return;
+        }
+
+        // Send the file name and project name to the backend
+        fetch("/create_file", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ project_name: selectedProject, file_name: fileName }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert("File created successfully!");
+                    populateFiles(selectedProject); // Refresh the file list for the selected project
+                }
+            })
+            .catch((err) => {
+                console.error("Error creating file:", err);
+                alert("An error occurred while creating the file.");
+            });
+    });
+
+    // Event: Confirm selection
+    confirmSelectionBtn.addEventListener("click", () => {
+        const selectedProject = existingProjects.value;
+        const selectedFile = projectFiles.value;
+        if (!selectedProject || !selectedFile) {
+            alert("Please select both a project and a file.");
+            return;
+        }
+        alert(`Selected Project: ${selectedProject}, File: ${selectedFile}`);
+        // Perform further actions with the selected project and file
+    });
+
+    submitToDatabaseBtn.addEventListener("click", () => {
+        const projectName = existingProjects.value;
+        const fileName = projectFiles.value;
+        const username = sessionStorage.getItem("userName");
+        const scenario = scenarioText.textContent.trim();
+        const plantUML = plantumlText.textContent.trim();
+        const chatHistory = Array.from(document.querySelectorAll(".chat-message")).map(
+            (msg) => msg.textContent.trim()
+        );
+
+        // Validate project and file selection
+        if (!projectName || !fileName) {
+            alert("Please select a project and a file before submitting.");
+            return;
+        }
+
+        // Prepare the payload
+        const payload = {
+            project_name: projectName,
+            file_name: fileName,
+            username: username || "Anonymous", // Default to "Anonymous" if no username is set
+            scenario: scenario,
+            plant_uml: plantUML,
+            chat_history: chatHistory,
+        };
+
+        // Send the data to the backend
+        fetch("/submit_to_database", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert("Work result saved successfully!");
+                }
+            })
+            .catch((err) => {
+                console.error("Error:", err);
+                alert("An error occurred while saving to the database.");
+            });
     });
 
     // ============================
