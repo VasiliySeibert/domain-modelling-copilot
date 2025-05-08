@@ -88,13 +88,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // Event Listeners
     // ============================
     submitNameBtn.addEventListener("click", handleNameSubmission);
-    sendButton.addEventListener("click", sendMessage);
+    // Changed from sendMessage to providesInput to match activity diagram
+    sendButton.addEventListener("click", providesInput);
     userInput.addEventListener("keypress", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
-            sendMessage();
+            providesInput();
         }
     });
+    
     createProjectBtn.addEventListener("click", () => {
         const projectName = newProjectName.value.trim();
         if (!projectName) {
@@ -181,11 +183,32 @@ document.addEventListener("DOMContentLoaded", () => {
         const projectName = existingProjects.value;
         const fileName = projectFiles.value;
         const username = sessionStorage.getItem("userName");
-        const scenario = scenarioText.textContent.trim();
-        const plantUML = plantumlText.textContent.trim();
-        const chatHistory = Array.from(document.querySelectorAll(".chat-message")).map(
-            (msg) => msg.textContent.trim()
-        );
+        
+        // Check if scenario text is empty and convert to null if needed
+        const scenarioRaw = scenarioText.textContent.trim();
+        const scenario = scenarioRaw === "No detailed description provided." || 
+                        scenarioRaw === "Your detailed scenario will be displayed here." ||
+                        scenarioRaw === "" ? null : scenarioRaw;
+        
+        // Check if plantUML is empty and convert to null if needed
+        const plantUMLRaw = plantumlText.textContent.trim();
+        const plantUML = plantUMLRaw === "" ? null : plantUMLRaw;
+        
+        // Format chat history as direct array of objects with role and content
+        const chatHistory = [];
+        document.querySelectorAll(".chat-message").forEach(msg => {
+            if (msg.classList.contains("user-message")) {
+                chatHistory.push({
+                    "role": "user", 
+                    "content": msg.textContent.trim()
+                });
+            } else if (msg.classList.contains("bot-message")) {
+                chatHistory.push({
+                    "role": "assistant", 
+                    "content": msg.textContent.trim()
+                });
+            }
+        });
 
         // Validate project and file selection
         if (!projectName || !fileName) {
@@ -193,15 +216,17 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Prepare the payload
+        // Prepare the payload to match the expected structure in MongoDB
         const payload = {
             project_name: projectName,
             file_name: fileName,
-            username: username || "Anonymous", // Default to "Anonymous" if no username is set
-            scenario: scenario,
-            plant_uml: plantUML,
+            username: username || "Anonymous",
+            scenario: scenario,  // Will be null if empty
+            plant_uml: plantUML, // Will be null if empty
             chat_history: chatHistory,
         };
+
+        console.log("Submitting to database:", payload);
 
         // Send the data to the backend
         fetch("/submit_to_database", {
@@ -224,7 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ============================
-    // Core Functions
+    // Core Functions - Renamed to match activity diagram
     // ============================
 
     // Handle name submission
@@ -256,8 +281,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
-    // Send a message
-    function sendMessage() {
+    // Renamed from sendMessage to providesInput to match activity diagram
+    function providesInput() {
         const message = userInput.value.trim();
         if (!message) return;
 
@@ -268,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Display the user's message in the chatbox
-        appendMessage("user", message);
+        display_input(message);
 
         // Clear the input field and disable input while processing
         userInput.value = "";
@@ -297,11 +322,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     displayErrorMessage(data.error); // Display error in the chatbox
                 } else if (data.scenario) {
                     // Display scenario and summary
-                    scenarioText.textContent = data.scenario || "No detailed description provided.";
-                    displayBotMessageWordByWord(data.summary, showActionButtons);
+                    display_scenario(data.scenario);
+                    display_response(data.summary);
+                    showActionButtons();
                 } else {
                     // General response
-                    displayBotMessageWordByWord(data.response || "No response provided.");
+                    display_response(data.response || "No response provided.");
                 }
             })
             .catch((err) => {
@@ -315,22 +341,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ============================
-    // Helper Functions
+    // Helper Functions - Renamed to match activity diagram
     // ============================
 
-    // Append a message to the chatbox
-    function appendMessage(role, content) {
+    // Changed from appendMessage to display_input to match activity diagram
+    function display_input(content) {
         const messageDiv = document.createElement("div");
-        messageDiv.classList.add("chat-message", `${role}-message`);
-
-        // Render Markdown content using marked.js
-        if (role === "bot") {
-            messageDiv.innerHTML = marked.parse(content); // Convert Markdown to HTML
-        } else {
-            messageDiv.textContent = content; // Plain text for user messages
-        }
-
+        messageDiv.classList.add("chat-message", "user-message");
+        messageDiv.textContent = content;
         chatBox.appendChild(messageDiv);
+        autoScrollChatBox(); // Auto-scroll after appending the message
+    }
+
+    // Added to match activity diagram
+    function display_scenario(scenario) {
+        scenarioText.textContent = scenario || "No detailed description provided.";
+    }
+
+    // Changed from displayBotMessageWordByWord to display_response to match activity diagram
+    function display_response(content) {
+        const botMessageDiv = document.createElement("div");
+        botMessageDiv.classList.add("chat-message", "bot-message");
+        
+        // Render Markdown content using marked.js
+        botMessageDiv.innerHTML = marked.parse(content);
+        
+        chatBox.appendChild(botMessageDiv);
         autoScrollChatBox(); // Auto-scroll after appending the message
     }
 
@@ -350,33 +386,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span></span><span></span><span></span>
             </span>`;
         return loadingDiv;
-    }
-
-    // Display bot messages word by word
-    function displayBotMessageWordByWord(text, callback) {
-        const botMessageDiv = document.createElement("div");
-        botMessageDiv.classList.add("chat-message", "bot-message");
-        chatBox.appendChild(botMessageDiv);
-
-        const words = text.split(" ");
-        let index = 0;
-
-        function displayNextWord() {
-            if (index < words.length) {
-                botMessageDiv.textContent += words[index] + " ";
-                index++;
-                autoScrollChatBox(); // Auto-scroll after adding each word
-                setTimeout(displayNextWord, 30); // Adjust delay as needed
-            } else {
-                // Render Markdown after the full response is displayed
-                botMessageDiv.innerHTML = marked.parse(botMessageDiv.textContent);
-                if (callback) {
-                    callback();
-                }
-            }
-        }
-
-        displayNextWord();
     }
 
     // Auto-scroll the chatbox
@@ -410,17 +419,49 @@ document.addEventListener("DOMContentLoaded", () => {
         plantumlText.textContent = `@startuml
 class User {
     +name: String
-    +email: String
-    +login(): void
+    +provides_input(): String
 }
 
-class Product {
-    +id: int
-    +name: String
-    +price: float
+class Chatbot {
+    +display_input(user_input): void
+    +display_scenario(scenario): void
+    +display_response(response): void
 }
 
-User "1" -- "0..*" Product : purchases
+class LLMWrapper {
+    +chat_history: List
+    +determine_input_type(user_input): String
+    +generate_response(user_name): String
+    +generate_scenario(scenario_text): String
+    +generate_summary(scenario): String
+}
 @enduml`;
     }
+
+    // Generate UML button event
+    document.getElementById("generateUMLBtn").addEventListener("click", function() {
+        const scenario = scenarioText.textContent.trim();
+        if (!scenario || scenario === "No detailed description provided.") {
+            alert("Please generate a scenario first");
+            return;
+        }
+
+        fetch("/generate_uml", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scenarioText: scenario }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    plantumlText.textContent = data.plantuml;
+                }
+            })
+            .catch((err) => {
+                console.error("Error:", err);
+                alert("An error occurred while generating UML.");
+            });
+    });
 });
