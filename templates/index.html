@@ -21,7 +21,7 @@
                 <input type="text" class="form-control me-2" id="userName" placeholder="Enter Name">
                 <button class="btn btn-outline-primary me-3" id="submitNameBtn">Submit</button>
             </div>
-            <button class="btn btn-success">Select File</button>
+            <button class="btn btn-success" id="selectProjectBtn" data-bs-toggle="modal" data-bs-target="#projectModal">Select Project</button>
         </header>
 
         <!-- Main Content -->
@@ -96,11 +96,49 @@
                         </div>
 
                         <div class="mt-3 d-flex justify-content-around">
-                            <button class="btn btn-primary">Submit to Database</button>
+                            <button class="btn btn-primary" id="submitToDatabaseBtn">Submit to Database</button>
                             <button class="btn btn-dark">Search Similar</button>
                             <button class="btn btn-success">Export</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Modal -->
+    <div class="modal fade" id="projectModal" tabindex="-1" aria-labelledby="projectModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="projectModalLabel">Select or Create Project</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <h6>Existing Projects</h6>
+                        <select class="form-select" id="existingProjects">
+                            <option value="" disabled selected>Select a project</option>
+                            <!-- Projects will be dynamically populated here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Create New Project</h6>
+                        <input type="text" class="form-control" id="newProjectName" placeholder="Enter project name">
+                        <button class="btn btn-primary mt-2" id="createProjectBtn">Create Project</button>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Files in Selected Project</h6>
+                        <select class="form-select" id="projectFiles">
+                            <option value="" disabled selected>Select a file</option>
+                            <!-- Files will be dynamically populated here -->
+                        </select>
+                        <button class="btn btn-secondary mt-2" id="createFileBtn">Create New File</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="confirmSelectionBtn">Confirm Selection</button>
                 </div>
             </div>
         </div>
