@@ -33,49 +33,31 @@ class DomainModellingApp {
             this.views.chatView.setUsername(savedName);
         }
 
-        // Set up event listeners
+        // Set up event listeners and initialize components
         this.setupEventListeners();
-
-        // Initialize default PlantUML
         this.views.umlView.displayDefaultPlantUML();
-
-        // Fetch projects from the backend
         this.views.projectView.fetchProjects();
     }
 
     setupEventListeners() {
-        // Name submission
+        // Bind all event handlers
         this.views.chatView.bindSubmitName((name) => this.handleNameSubmission(name));
-        
-        // Message sending
         this.views.chatView.bindSendMessage((message) => this.handleSendMessage(message));
-        
-        // Project management
         this.views.projectView.bindCreateProject();
         this.views.projectView.bindSelectProject();
         this.views.projectView.bindCreateFile();
         this.views.projectView.bindConfirmSelection();
-        
-        // UML generation - restored
         this.views.umlView.bindGenerateUML();
         
         // Database submission
-        this.views.projectView.bindSubmitToDatabase(() => {
-            const projectData = this.views.projectView.getProjectData();
-            const username = this.sessionModel.getSavedName();
-            const scenario = this.views.umlView.getScenarioText();
-            const plantUML = this.views.umlView.getPlantUMLText();
-            const chatHistory = this.views.chatView.getChatHistory();
-            
-            return {
-                project_name: projectData.projectName,
-                file_name: projectData.fileName,
-                username: username || "Anonymous",
-                scenario: scenario === "No detailed description provided." ? null : scenario,
-                plant_uml: plantUML === "" ? null : plantUML,
-                chat_history: chatHistory
-            };
-        });
+        this.views.projectView.bindSubmitToDatabase(() => ({
+            project_name: this.views.projectView.getProjectData().projectName,
+            file_name: this.views.projectView.getProjectData().fileName,
+            username: this.sessionModel.getSavedName() || "Anonymous",
+            scenario: this.views.umlView.getScenarioText() === "No detailed description provided." ? null : this.views.umlView.getScenarioText(),
+            plant_uml: this.views.umlView.getPlantUMLText() === "" ? null : this.views.umlView.getPlantUMLText(),
+            chat_history: this.views.chatView.getChatHistory()
+        }));
     }
 
     handleNameSubmission(name) {
@@ -114,12 +96,10 @@ class DomainModellingApp {
             return;
         }
 
-        // Display user's message
+        // Display user's message and show loading state
         this.views.chatView.display_input(message);
         this.views.chatView.clearInput();
         this.views.chatView.disableInput();
-
-        // Show loading indicator
         const loadingIndicator = this.views.chatView.showLoadingIndicator();
 
         // Send request to backend
@@ -135,15 +115,14 @@ class DomainModellingApp {
                 return response.json();
             })
             .then((data) => {
-                // Remove loading indicator
                 loadingIndicator.remove();
 
                 if (data.error) {
                     this.views.chatView.displayErrorMessage(data.error);
                 } else if (data.scenario) {
-                    // Display scenario and summary
+                    // Display domain model description and suggestion
                     this.views.umlView.setScenario(data.scenario);
-                    this.views.chatView.displayBotMessage(data.summary);
+                    this.views.chatView.displayBotMessage(data.suggestion); // Updated from "suggestion" to "suggestion"
                     this.views.chatView.showActionButtons();
                 } else {
                     // General response
@@ -195,24 +174,21 @@ class ChatView {
     
     bindSubmitName(handler) {
         this.elements.submitNameBtn.addEventListener("click", () => {
-            const name = this.elements.userNameInput.value.trim();
-            handler(name);
+            handler(this.elements.userNameInput.value.trim());
         });
     }
     
     bindSendMessage(handler) {
         // Button click handler
         this.elements.sendButton.addEventListener("click", () => {
-            const message = this.elements.userInput.value.trim();
-            handler(message);
+            handler(this.elements.userInput.value.trim());
         });
         
         // Enter key handler
         this.elements.userInput.addEventListener("keypress", (event) => {
             if (event.key === "Enter") {
                 event.preventDefault();
-                const message = this.elements.userInput.value.trim();
-                handler(message);
+                handler(this.elements.userInput.value.trim());
             }
         });
     }
@@ -232,10 +208,7 @@ class ChatView {
     displayBotMessage(content) {
         const botMessageDiv = document.createElement("div");
         botMessageDiv.classList.add("chat-message", "bot-message");
-        
-        // Render Markdown content using marked.js
         botMessageDiv.innerHTML = marked.parse(content);
-        
         this.elements.chatBox.appendChild(botMessageDiv);
         this.autoScrollChatBox();
     }
@@ -251,10 +224,7 @@ class ChatView {
     showLoadingIndicator() {
         const loadingDiv = document.createElement("div");
         loadingDiv.classList.add("chat-message", "loading-message");
-        loadingDiv.innerHTML = `
-            <span class="loading-dots">
-                <span></span><span></span><span></span>
-            </span>`;
+        loadingDiv.innerHTML = `<span class="loading-dots"><span></span><span></span><span></span></span>`;
         this.elements.chatBox.appendChild(loadingDiv);
         this.autoScrollChatBox();
         return loadingDiv;
@@ -690,12 +660,10 @@ class UMLView {
             scenarioText: document.getElementById("scenarioText")
         };
         
-        // Set a default PlantUML diagram for initial state
         this.displayDefaultPlantUML();
     }
     
     displayDefaultPlantUML() {
-        // Better sample PlantUML that's more professional and relevant
         const staticUML = `@startuml
 ' Domain Model Example
 package "Business Domain" {
@@ -735,24 +703,21 @@ package "Business Domain" {
     }
     
     bindGenerateUML() {
-        // Add listener for when a scenario is displayed
-        // This will be triggered automatically when a scenario is set
+        // Will be triggered when setScenario is called
     }
     
     setScenario(scenario) {
         this.elements.scenarioText.textContent = scenario || "No detailed description provided.";
         
-        // Generate UML from scenario text
         if (scenario && scenario.trim()) {
             this.generateUMLFromScenario(scenario);
         }
     }
     
     generateUMLFromScenario(scenarioText) {
-        // Show loading state for PlantUML generation
+        // Show loading state
         this.elements.plantumlText.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
         
-        // Call backend API to generate PlantUML
         fetch("/generate_uml", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

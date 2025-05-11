@@ -13,10 +13,10 @@ class LLMService:
         self.current_scenario = Scenario()
         self.client = OpenAIClient.get_client()
     
-    def determine_input_type(self, user_input):
-        """Determine if the input has enough information for domain modeling."""
+    def determine_input_type(self, chat_history):
+        """
+        Determine if the input has enough information for domain model description."""
         try:
-            # Using OpenAI function calling to get a more detailed analysis
             functions = [
                 {
                     "name": "get_decision",
@@ -29,7 +29,7 @@ class LLMService:
                                 "properties": {
                                     "value": {
                                         "type": "string",
-                                        "description": "The input text being evaluated"
+                                        "description": "The chat history being evaluated"
                                     },
                                     "condition": {
                                         "type": "string",
@@ -56,22 +56,25 @@ class LLMService:
             ]
 
             system_prompt = """You are an expert domain modelling engineer according to E. Evans, Domain-driven design principles. 
-            Your job is to decide if the user has provided enough information for a domain model.
+            Your job is to decide if the chat history has enough information for a domain model.
             
             Guidelines:
             - You need at minimum three entities and two relationships
             - The user themselves cannot be an entity
             - If provided with something like "I own a bicycle store in Hamburg. We sell E bikes and regular bikes," 
               this contains enough information (Store, E-bike, Regular bike entities)
-            
+            Analyze the ENTIRE chat history, not just the last message.
             Use the function to return your analysis with a boolean decision and suggestions."""
+
+            # Create messages array with system prompt
+            messages = [{"role": "system", "content": system_prompt}]
+            
+            # Add chat history messages directly as an array
+            messages.extend(chat_history)
 
             response = self.client.chat.completions.create(
                 model=os.getenv("GPT_MODEL"),
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input}
-                ],
+                messages=messages,
                 functions=functions,
                 function_call={"name": "get_decision"}
             )
@@ -85,59 +88,30 @@ class LLMService:
                 "arguments": json.loads(function_call.arguments) if hasattr(function_call, "arguments") else None
             }
 
+            # Print the function call details
             print(json.dumps(function_call_dict, indent=2))
             
             if function_call and function_call.name == "get_decision":
                 result = json.loads(function_call.arguments)
                 
-                # Store the full analysis for potential later use
-                self._last_analysis = result
-                
-                # Return "scenario" if there's enough info, otherwise "general"
-                return "scenario" if result.get("decision") else "general"
-                
+                # Return the result directly
+                return result
+                    
             # Fallback if function call doesn't work as expected
-            return "general"
+            return {
+                "decision": False, 
+                "suggestions": ["Consider adding more specific entities and relationships"]
+            }
                 
         except Exception as e:
             print(f"Error determining input type: {e}")
-            # Fallback to simpler classification if function calling fails
-            try:
-                prompts = [
-                    {"role": "system", "content": "Classify the input as either 'general' or 'scenario'."},
-                    {"role": "user", "content": f"Input: {user_input}"}
-                ]
+            # Fallback with default values
+            return {
+                "decision": False,
+                "suggestions": ["Consider adding more specific entities and relationships"]
+            }
 
-                response = self.client.chat.completions.create(
-                    model=os.getenv("GPT_MODEL"), messages=prompts
-                )
-                return response.choices[0].message.content.strip().lower()
-            except Exception as e2:
-                print(f"Fallback classification also failed: {e2}")
-                return "general"  # Default to "general" in case of an error
-                
-    # Add helper method to get the last analysis (optional enhancement)
-    def get_last_analysis(self):
-        """Get the detailed analysis from the last input classification."""
-        return getattr(self, "_last_analysis", None)
-    
-    def generate_response(self, user_name):
-        """Generate a general response using GPT."""
-        try:
-            prompts = [
-                {"role": "system", "content": f"You are a helpful assistant. The user's name is {user_name}."}
-            ] + self.chat_history.get_messages()
-
-            response = self.client.chat.completions.create(
-                model=os.getenv("GPT_MODEL"), messages=prompts
-            )
-            bot_reply = response.choices[0].message.content.strip()
-            self.chat_history.add_message("assistant", bot_reply)
-            return bot_reply
-        except Exception as e:
-            print(f"Error generating response: {e}")
-            return "An error occurred while processing your request."
-    
+    # Generate a domain model description based on user input
     def generate_scenario(self, scenario_text):
         """Generate a detailed scenario from the given user input."""
         try:
@@ -162,27 +136,7 @@ class LLMService:
             print(f"Error generating scenario: {e}")
             return "An error occurred while generating the scenario."
     
-    def generate_summary(self, detailed_description):
-        """Generate a summary from the given detailed scenario."""
-        try:
-            prompts = [
-                {"role": "system", "content": 
-                    "Summarize the following scenario in one sentence. "
-                    "On a new line, ask if the user would like to refine any aspects of the model."
-                },
-                {"role": "user", "content": f"Summarize the following domain model:\n\n{detailed_description}"}
-            ]
-
-            response = self.client.chat.completions.create(
-                model=os.getenv("GPT_MODEL"), messages=prompts
-            )
-            summary = response.choices[0].message.content.strip()
-            self.chat_history.add_message("assistant", summary)
-            return summary
-        except Exception as e:
-            print(f"Error generating summary: {e}")
-            return "An error occurred while generating the summary."
-    
+    # Add helper methods to manage chat history
     def add_to_chat_history(self, role, content):
         """Add an entry to the chat history."""
         self.chat_history.add_message(role, content)

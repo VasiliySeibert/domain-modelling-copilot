@@ -1,7 +1,5 @@
 from flask import request, jsonify, session
 from src.model.llm_service import LLMService
-from src.model.chat_history import ChatHistory
-from src.model.scenario import Scenario
 from src.model.gpt2 import gpt_v2_interface 
 
 class ChatController:
@@ -11,46 +9,49 @@ class ChatController:
         self.llm_service = LLMService()
         
     def handle_chat_request(self):
-        """Process user input and return appropriate response"""
+        """Process user input and return domain model with suggestions"""
         try:
-            raw_input = request.json.get("message", "").strip()
-            if not raw_input:
-                return jsonify({"error": "Message is required. Please enter a valid message."}), 400
+            # Get and validate user input
+            user_input = request.json.get("message", "").strip()
+            if not user_input:
+                return jsonify({"error": "User input is required"}), 400
 
             user_name = session.get("user_name")
             if not user_name:
-                return jsonify({"error": "User name is not set. Please submit your name first."}), 400
+                return jsonify({"error": "User name is not set"}), 400
             
-            # Validate input
-            if not isinstance(raw_input, str):
-                return jsonify({"error": "User input must be a string"}), 400
-            user_input = raw_input.strip()
-            
-            # Add to chat history
+            # Add current input to chat history
             self.llm_service.add_to_chat_history("user", user_input)
-            
-            # Determine input type
-            input_type = self.llm_service.determine_input_type(user_input)
 
-            if input_type == "general":
-                # Generate general response
-                response = self.llm_service.generate_response(user_name)
-                return jsonify({"response": response, "history": self.llm_service.get_chat_history()})
+            # Get updated chat history after adding the new message
+            updated_chat_history = self.llm_service.chat_history.get_messages()
+
+            result = self.llm_service.determine_input_type(updated_chat_history)
+            suggestions = result.get("suggestions", [])
             
-            elif input_type == "scenario":
-                # Generate scenario
+            # Check if there's enough info for a domain model based on decision
+            if result.get("decision", False):
+                # Generate domain model description if there's enough information
                 scenario = self.llm_service.generate_scenario(user_input)
+                formatted_suggestions = "**Suggestions to improve your domain model:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
                 
-                # Generate summary
-                summary = self.llm_service.generate_summary(scenario)
+                # Add suggestions to chat history
+                self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
                 
-                return jsonify({"scenario": scenario, "summary": summary})
+                return jsonify({"scenario": scenario, "suggestion": formatted_suggestions})
             else:
-                return jsonify({"error": "Unable to classify the input. Please rephrase your query."}), 400
+                # Not enough info for domain modeling - show suggestions for what's needed
+                formatted_suggestions = "**To create a domain model, I need more information:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
+                
+                # Add suggestions to chat history
+                self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
+                
+                # Return response in a format that won't trigger domain model description display
+                return jsonify({"response": formatted_suggestions, "history": self.llm_service.get_chat_history()})
 
         except Exception as e:
             print(f"Error in chat request: {e}")
-            return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
+            return jsonify({"error": "An unexpected error occurred"}), 500
     
     def submit_name(self):
         """Store user's name in session"""
