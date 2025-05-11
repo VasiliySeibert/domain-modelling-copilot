@@ -2,6 +2,7 @@ from src.model.openai_client import OpenAIClient
 from src.model.chat_history import ChatHistory
 from src.model.scenario import Scenario
 import os
+import json
 
 class LLMService:
     """Service for language model operations."""
@@ -13,20 +14,112 @@ class LLMService:
         self.client = OpenAIClient.get_client()
     
     def determine_input_type(self, user_input):
-        """Determine if the input is general or scenario type."""
+        """Determine if the input has enough information for domain modeling."""
         try:
-            prompts = [
-                {"role": "system", "content": "Classify the input as either 'general_type' or 'scenario_type'."},
-                {"role": "user", "content": f"Input: {user_input}"}
+            # Using OpenAI function calling to get a more detailed analysis
+            functions = [
+                {
+                    "name": "get_decision",
+                    "description": "Returns a decision about domain modeling potential with suggestions",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "criteria": {
+                                "type": "object",
+                                "properties": {
+                                    "value": {
+                                        "type": "string",
+                                        "description": "The input text being evaluated"
+                                    },
+                                    "condition": {
+                                        "type": "string",
+                                        "description": "The condition for domain modeling potential"
+                                    }
+                                },
+                                "required": ["condition", "value"]
+                            },
+                            "decision": {
+                                "type": "boolean",
+                                "description": "True if there's enough information for domain modeling, false otherwise"
+                            },
+                            "suggestions": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "Suggestions for improving domain model information"
+                            }
+                        },
+                        "required": ["criteria", "decision", "suggestions"]
+                    }
+                }
             ]
 
+            system_prompt = """You are an expert domain modelling engineer according to E. Evans, Domain-driven design principles. 
+            Your job is to decide if the user has provided enough information for a domain model.
+            
+            Guidelines:
+            - You need at minimum three entities and two relationships
+            - The user themselves cannot be an entity
+            - If provided with something like "I own a bicycle store in Hamburg. We sell E bikes and regular bikes," 
+              this contains enough information (Store, E-bike, Regular bike entities)
+            
+            Use the function to return your analysis with a boolean decision and suggestions."""
+
             response = self.client.chat.completions.create(
-                model=os.getenv("GPT_MODEL"), messages=prompts
+                model=os.getenv("GPT_MODEL"),
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_input}
+                ],
+                functions=functions,
+                function_call={"name": "get_decision"}
             )
-            return response.choices[0].message.content.strip().lower()
+            
+            # Extract function call result
+            function_call = response.choices[0].message.function_call
+
+            # Print in JSON format
+            function_call_dict = {
+                "name": function_call.name,
+                "arguments": json.loads(function_call.arguments) if hasattr(function_call, "arguments") else None
+            }
+
+            print(json.dumps(function_call_dict, indent=2))
+            
+            if function_call and function_call.name == "get_decision":
+                result = json.loads(function_call.arguments)
+                
+                # Store the full analysis for potential later use
+                self._last_analysis = result
+                
+                # Return "scenario" if there's enough info, otherwise "general"
+                return "scenario" if result.get("decision") else "general"
+                
+            # Fallback if function call doesn't work as expected
+            return "general"
+                
         except Exception as e:
             print(f"Error determining input type: {e}")
-            return "general_type"  # Default to "general_type" in case of an error
+            # Fallback to simpler classification if function calling fails
+            try:
+                prompts = [
+                    {"role": "system", "content": "Classify the input as either 'general' or 'scenario'."},
+                    {"role": "user", "content": f"Input: {user_input}"}
+                ]
+
+                response = self.client.chat.completions.create(
+                    model=os.getenv("GPT_MODEL"), messages=prompts
+                )
+                return response.choices[0].message.content.strip().lower()
+            except Exception as e2:
+                print(f"Fallback classification also failed: {e2}")
+                return "general"  # Default to "general" in case of an error
+                
+    # Add helper method to get the last analysis (optional enhancement)
+    def get_last_analysis(self):
+        """Get the detailed analysis from the last input classification."""
+        return getattr(self, "_last_analysis", None)
     
     def generate_response(self, user_name):
         """Generate a general response using GPT."""
@@ -52,10 +145,8 @@ class LLMService:
                 {
                     "role": "system",
                     "content": (
-                        "You are a domain modeling copilot. Generate clear, structured natural language descriptions "
-                        "of domain models. Focus on classes, attributes, and relationships. Be concise and specific. "
-                        "Avoid lengthy narratives or stories. Format your response as a professional business analysis "
-                        "document with appropriate sections for key entities and their relationships."
+                        "You are a domain modeling copilot. Generate clear, structured natural language descriptions of domain models. Focus on classes, attributes, and relationships. Be concise and specific. "
+                        "Avoid lengthy narratives or stories. Format your response as a professional business analysis document with appropriate sections for key entities and their relationships."
                     )
                 },
                 {"role": "user", "content": f"Generate a domain model description for: {scenario_text}"}

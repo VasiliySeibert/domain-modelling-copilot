@@ -56,8 +56,8 @@ class DomainModellingApp {
         this.views.projectView.bindCreateFile();
         this.views.projectView.bindConfirmSelection();
         
-        // UML generation - removed dynamic generation
-        // this.views.umlView.bindGenerateUML();
+        // UML generation - restored
+        this.views.umlView.bindGenerateUML();
         
         // Database submission
         this.views.projectView.bindSubmitToDatabase(() => {
@@ -320,7 +320,7 @@ class ProjectView {
             projectFiles: document.getElementById("projectFiles"),
             createFileBtn: document.getElementById("createFileBtn"),
             confirmSelectionBtn: document.getElementById("confirmSelectionBtn"),
-            submitToDatabaseBtn: document.getElementById("submitToDatabaseBtn"),
+            saveToDatabaseBtn: document.getElementById("saveToDatabaseBtn"), // FIXED: use correct ID
             // New elements for improved UI
             projectSelectionStep: document.getElementById("projectSelectionStep"),
             fileSelectionStep: document.getElementById("fileSelectionStep"),
@@ -542,20 +542,55 @@ class ProjectView {
           // Show confirmation using alert
           alert(`Selected: Project "${selectedProject}", File "${selectedFile}"`);
           
-          // Update header or another visible area to show current selection
-          const headerElement = document.querySelector("header");
-          const selectionDisplay = document.createElement("div");
-          selectionDisplay.classList.add("ms-2", "text-white");
-          selectionDisplay.innerHTML = `<small>Project: ${selectedProject} / File: ${selectedFile}</small>`;
-          
-          // Remove any existing selection display
-          const existingDisplay = headerElement.querySelector(".selection-display");
-          if (existingDisplay) {
-            headerElement.removeChild(existingDisplay);
-          }
-          
-          selectionDisplay.classList.add("selection-display");
-          headerElement.appendChild(selectionDisplay);
+          // Display is removed as requested - we're not adding anything to the header
+        });
+    }
+    
+    bindSubmitToDatabase(handler) {
+        // Use element from the class properties
+        if (!this.elements.saveToDatabaseBtn) {
+            console.error("Save to Database button not found");
+            return;
+        }
+        
+        this.elements.saveToDatabaseBtn.addEventListener("click", () => {
+            // Check if project and file are selected
+            if (!this.selectedProject || !this.selectedFile) {
+                alert("Please select a project and file first using the 'Select Project' button.");
+                return;
+            }
+            
+            // Get data from handler
+            const data = handler();
+            
+            // Show loading state
+            this.elements.saveToDatabaseBtn.disabled = true;
+            this.elements.saveToDatabaseBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Saving...';
+            
+            // Send data to backend
+            fetch("/save_to_database", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(result => {
+                // Reset button state
+                this.elements.saveToDatabaseBtn.disabled = false;
+                this.elements.saveToDatabaseBtn.textContent = "Save to Database";
+                
+                if (result.error) {
+                    alert(result.error);
+                } else {
+                    alert("Successfully saved to database!");
+                }
+            })
+            .catch(err => {
+                console.error("Error saving to database:", err);
+                alert("An error occurred while saving to database.");
+                this.elements.saveToDatabaseBtn.disabled = false;
+                this.elements.saveToDatabaseBtn.textContent = "Save to Database";
+            });
         });
     }
     
@@ -632,10 +667,21 @@ class ProjectView {
             fileName: this.selectedFile
         };
     }
+
+    // Add this method to the ProjectView class
+    resetModalState() {
+        // Reset modal to initial state
+        this.elements.projectSelectionStep.classList.remove("d-none");
+        this.elements.fileSelectionStep.classList.add("d-none");
+        this.elements.confirmSelectionBtn.disabled = true;
+        this.elements.newProjectName.value = "";
+        this.elements.existingProjects.selectedIndex = 0;
+        this.elements.projectFiles.innerHTML = '<option value="" disabled selected>Select a file</option>';
+    }
 }
 
 /**
- * UML View - Simplified with static UML display
+ * UML View - Modified to generate PlantUML from scenario text
  */
 class UMLView {
     constructor() {
@@ -644,64 +690,92 @@ class UMLView {
             scenarioText: document.getElementById("scenarioText")
         };
         
-        // Set a static, meaningful PlantUML diagram immediately
+        // Set a default PlantUML diagram for initial state
         this.displayDefaultPlantUML();
     }
     
     displayDefaultPlantUML() {
+        // Better sample PlantUML that's more professional and relevant
         const staticUML = `@startuml
-' Domain Modelling Copilot - Static UML Diagram
-package "Domain Model" {
-    class DomainEntity {
+' Domain Model Example
+package "Business Domain" {
+    class Entity {
         +id: String
         +name: String
-        +description: String
-        +createdAt: Date
-        +updatedAt: Date
+        +createdAt: DateTime
+        +updatedAt: DateTime
     }
     
-    class Product extends DomainEntity {
-        +price: Decimal
-        +category: String
-        +isAvailable: Boolean
-        +getDiscountedPrice(): Decimal
+    class BusinessEntity extends Entity {
+        +taxId: String
+        +registrationNumber: String
+        +validate(): Boolean
     }
     
-    class Customer extends DomainEntity {
+    class Person extends Entity {
         +email: String
-        +phoneNumber: String
-        +address: String
-        +loyaltyPoints: Integer
-        +calculateLoyaltyDiscount(): Decimal
+        +phone: String
+        +dateOfBirth: Date
+        +getAge(): Integer
     }
     
-    class Order {
-        +orderId: String
-        +orderDate: Date
-        +totalAmount: Decimal
+    class Relationship {
+        +startDate: Date
+        +endDate: Date
         +status: String
-        +processPayment(): Boolean
-        +ship(): void
+        +isActive(): Boolean
     }
     
-    Customer "1" -- "0..*" Order: places >
-    Order "1" o-- "1..*" Product: contains >
+    BusinessEntity "1" -- "0..*" Person: employs >
+    Person "1" -- "0..*" Relationship: participates in >
 }
 @enduml`;
         
         this.elements.plantumlText.textContent = staticUML;
     }
     
+    bindGenerateUML() {
+        // Add listener for when a scenario is displayed
+        // This will be triggered automatically when a scenario is set
+    }
+    
     setScenario(scenario) {
         this.elements.scenarioText.textContent = scenario || "No detailed description provided.";
         
-        // After setting scenario, always display the static UML
-        this.displayDefaultPlantUML();
+        // Generate UML from scenario text
+        if (scenario && scenario.trim()) {
+            this.generateUMLFromScenario(scenario);
+        }
+    }
+    
+    generateUMLFromScenario(scenarioText) {
+        // Show loading state for PlantUML generation
+        this.elements.plantumlText.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+        
+        // Call backend API to generate PlantUML
+        fetch("/generate_uml", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scenarioText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                this.elements.plantumlText.textContent = "Error generating UML: " + data.error;
+            } else if (data.plantuml) {
+                this.setPlantUML(data.plantuml);
+            } else {
+                this.elements.plantumlText.textContent = "No UML diagram could be generated from the provided scenario.";
+            }
+        })
+        .catch(err => {
+            console.error("Error generating UML:", err);
+            this.elements.plantumlText.textContent = "Failed to generate UML diagram. Please try again.";
+        });
     }
     
     setPlantUML(plantUML) {
-        // Ignore dynamic PlantUML and just use our static one
-        this.displayDefaultPlantUML();
+        this.elements.plantumlText.textContent = plantUML;
     }
     
     getScenarioText() {

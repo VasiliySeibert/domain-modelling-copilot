@@ -32,12 +32,12 @@ class ChatController:
             # Determine input type
             input_type = self.llm_service.determine_input_type(user_input)
 
-            if input_type == "general_type":
+            if input_type == "general":
                 # Generate general response
                 response = self.llm_service.generate_response(user_name)
                 return jsonify({"response": response, "history": self.llm_service.get_chat_history()})
             
-            elif input_type == "scenario_type":
+            elif input_type == "scenario":
                 # Generate scenario
                 scenario = self.llm_service.generate_scenario(user_input)
                 
@@ -70,7 +70,7 @@ class ChatController:
         try:
             scenario_text = request.json.get("scenarioText", "").strip()
             if not scenario_text:
-                return jsonify({"error": "Scenario text is required"}), 400
+                return jsonify({"error": "Domain Model Description is required"}), 400
 
             client = self.llm_service.client
             plant_uml = gpt_v2_interface(scenario_text, client)
