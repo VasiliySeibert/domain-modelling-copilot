@@ -16,7 +16,14 @@ class LLMService:
     def determine_input_type(self, chat_history):
         """
         Determine if the input has enough information for domain model description."""
+        
         try:
+            # Format chat history as a single string for analysis
+            chat_history_text = "\n".join([
+                f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}"
+                for msg in chat_history
+            ])
+            
             functions = [
                 {
                     "name": "get_decision",
@@ -55,22 +62,17 @@ class LLMService:
                 }
             ]
 
-            system_prompt = """You are an expert domain modelling engineer according to E. Evans, Domain-driven design principles. 
-            Your job is to decide if the chat history has enough information for a domain model.
+            system_prompt = """You are an expert domain modelling engineer according to E. Evans, Domain-driven design: tackling complexity in the heart of software. Addison-Wesley Professional, 2004. You specialized in domain models expressed in UML. Your job is to decide if the user has provided enough information, for a domain model. e.g. if the user just provides his name, information about general things like the weather or just requests some information, then you as an expert don't have enough information to derive a domain model from it. You need some description about a customer domain. You will receive a user input or chat history and your job is to decide if the information in this text is sufficient for creating a domain model. Keep in mind that you talk to a customer, don't be too hard if not all attributes, entities and relationships are provided. To get started you only need at minimum three entities and two relationships. the user cannot be a entity.\n\ne.g. if you are provided with something like \"I own a bicycle store in Hamburg. We sell E bikes and regular bikes.\" then you can already derive a domain model from it. \n\nIf your decision is that you don't have enough information, then please provide information about what else you need for a domain model. Also provide maximum 1 question that the user needs to be asked for a proper domain model. the question must be formulated in a way so that if it was answered, then a domain model can be generated.
+            """
             
-            Guidelines:
-            - You need at minimum three entities and two relationships
-            - The user themselves cannot be an entity
-            - If provided with something like "I own a bicycle store in Hamburg. We sell E bikes and regular bikes," 
-              this contains enough information (Store, E-bike, Regular bike entities)
-            Analyze the ENTIRE chat history, not just the last message.
-            Use the function to return your analysis with a boolean decision and suggestions."""
+            # Create messages with the chat history as string in user message
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Chat History:\n{chat_history_text}"}
+            ]
 
-            # Create messages array with system prompt
-            messages = [{"role": "system", "content": system_prompt}]
-            
-            # Add chat history messages directly as an array
-            messages.extend(chat_history)
+            print("Chat history for function call:")
+            print(chat_history_text)
 
             response = self.client.chat.completions.create(
                 model=os.getenv("GPT_MODEL"),
