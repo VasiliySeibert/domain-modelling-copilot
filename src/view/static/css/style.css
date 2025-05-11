@@ -379,3 +379,35 @@ header {
     font-family: 'Courier New', Courier, monospace;
 }
 
+/* Add these styles for the step-by-step modal */
+
+/* Step transitions */
+.step-container {
+    transition: all 0.3s ease;
+    padding: 10px 0;
+}
+
+/* Style for the selected project name */
+#selectedProjectName {
+    color: #007bff;
+    font-size: 1.1em;
+}
+
+/* Back button */
+#backToProjectSelectionBtn {
+    font-size: 0.85em;
+    padding: 4px 10px;
+    margin-top: -5px;
+}
+
+/* Step indicators */
+.text-muted {
+    font-size: 0.85em;
+}
+
+/* Improve button spacing */
+.modal-footer {
+    justify-content: space-between;
+    padding: 15px 20px;
+}
+

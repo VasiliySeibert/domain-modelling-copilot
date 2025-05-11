@@ -1,12 +1,15 @@
-from openai_client import OpenAIClient
+from src.model.openai_client import OpenAIClient
+from src.model.chat_history import ChatHistory
+from src.model.scenario import Scenario
 import os
 
-class LLMWrapper:
-    """Wrapper for language model functionality."""
+class LLMService:
+    """Service for language model operations."""
     
     def __init__(self):
-        """Initialize the LLM wrapper with an empty chat history."""
-        self.chat_history = []
+        """Initialize the LLM service with chat history and scenario objects."""
+        self.chat_history = ChatHistory()
+        self.current_scenario = Scenario()
         self.client = OpenAIClient.get_client()
     
     def determine_input_type(self, user_input):
@@ -30,13 +33,13 @@ class LLMWrapper:
         try:
             prompts = [
                 {"role": "system", "content": f"You are a helpful assistant. The user's name is {user_name}."}
-            ] + self.chat_history
+            ] + self.chat_history.get_messages()
 
             response = self.client.chat.completions.create(
                 model=os.getenv("GPT_MODEL"), messages=prompts
             )
             bot_reply = response.choices[0].message.content.strip()
-            self.chat_history.append({"role": "assistant", "content": bot_reply})
+            self.chat_history.add_message("assistant", bot_reply)
             return bot_reply
         except Exception as e:
             print(f"Error generating response: {e}")
@@ -49,20 +52,21 @@ class LLMWrapper:
                 {
                     "role": "system",
                     "content": (
-                        "You are a domain modeling copilot. Your task is to generate clear and structured natural language descriptions of domain models based on user input."
-                        "You describe entities, their relationships, and their components in a professional and informative way, similar to product or business documentation."
-                        "Use the following style as a reference:"
-                        "In our action camera store, we specialize in cameras designed for adventurers and professionals seeking rugged and versatile solutions to capture their journeys. The inclusion of different models like ActionCamPro and AdventureCamX caters to a comprehensive range of activities and environments..."
-                        "Use this style to generate similar descriptions for other domains based on user input."
+                        "You are a domain modeling copilot. Generate clear, structured natural language descriptions "
+                        "of domain models. Focus on classes, attributes, and relationships. Be concise and specific. "
+                        "Avoid lengthy narratives or stories. Format your response as a professional business analysis "
+                        "document with appropriate sections for key entities and their relationships."
                     )
                 },
-                {"role": "user", "content": f"Generate a clear and structured scenario for the following input:\n\n{scenario_text}"}
+                {"role": "user", "content": f"Generate a domain model description for: {scenario_text}"}
             ]
 
             response = self.client.chat.completions.create(
                 model=os.getenv("GPT_MODEL"), messages=prompts
             )
-            return response.choices[0].message.content.strip()
+            generated_scenario = response.choices[0].message.content.strip()
+            self.current_scenario.set_text(generated_scenario)
+            return generated_scenario
         except Exception as e:
             print(f"Error generating scenario: {e}")
             return "An error occurred while generating the scenario."
@@ -72,17 +76,17 @@ class LLMWrapper:
         try:
             prompts = [
                 {"role": "system", "content": 
-                    "Summarize the following scenario in one sentence."
-                    "At last ask something in next line. For example, 'Is there anything else I can help you with?'"
+                    "Summarize the following scenario in one sentence. "
+                    "On a new line, ask if the user would like to refine any aspects of the model."
                 },
-                {"role": "user", "content": f"Summarize the following scenario:\n\n{detailed_description}"}
+                {"role": "user", "content": f"Summarize the following domain model:\n\n{detailed_description}"}
             ]
 
             response = self.client.chat.completions.create(
                 model=os.getenv("GPT_MODEL"), messages=prompts
             )
             summary = response.choices[0].message.content.strip()
-            self.chat_history.append({"role": "assistant", "content": summary})
+            self.chat_history.add_message("assistant", summary)
             return summary
         except Exception as e:
             print(f"Error generating summary: {e}")
@@ -90,12 +94,16 @@ class LLMWrapper:
     
     def add_to_chat_history(self, role, content):
         """Add an entry to the chat history."""
-        self.chat_history.append({"role": role, "content": content})
+        self.chat_history.add_message(role, content)
     
     def get_chat_history(self):
         """Get the current chat history."""
-        return self.chat_history
+        return self.chat_history.get_messages()
     
     def clear_chat_history(self):
         """Clear the chat history."""
-        self.chat_history = []
+        self.chat_history.clear()
+        
+    def get_current_scenario(self):
+        """Get the current scenario."""
+        return self.current_scenario.get_text()
