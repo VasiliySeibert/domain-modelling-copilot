@@ -22,8 +22,8 @@ class ProjectService:
             self.db = None
             self.projects_collection = None
     
-    def submit_to_database(self, project_name, file_name, username, scenario, plant_uml, chat_history):
-        """Submit work results to the database."""
+    def save_to_database(self, project_name, file_name, username, domain_model_description, plant_uml, chat_history):
+        """Save work results to the database."""
         if not project_name or not file_name:
             return {"error": "Project name and file name are required."}, 400
             
@@ -47,7 +47,7 @@ class ProjectService:
             {"project_name": project_name, "files.file_name": file_name},
             {
                 "$set": {
-                    "files.$.scenario": scenario,
+                    "files.$.domain_model_description": domain_model_description,
                     "files.$.plant_uml": plant_uml,
                     "files.$.chat_history": chat_history,
                     "files.$.last_modified_by": username,
@@ -114,7 +114,7 @@ class ProjectService:
         new_file = {
             "file_name": file_name,
             "created_at": datetime.now(),
-            "scenario": None,
+            "domain_model_description": None,
             "plant_uml": None,
             "chat_history": []
         }

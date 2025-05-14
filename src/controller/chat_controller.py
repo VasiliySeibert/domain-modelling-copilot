@@ -26,19 +26,30 @@ class ChatController:
             # Get updated chat history after adding the new message
             updated_chat_history = self.llm_service.chat_history.get_messages()
 
-            result = self.llm_service.determine_input_type(updated_chat_history)
+            # Format chat history as a single string
+            chat_history_text = "\n".join([
+                f"{'User' if msg['role'] == 'user' else 'Assistant'}: {msg['content']}"
+                for msg in updated_chat_history
+            ])
+            
+            # print(f"\n\nChat History: {chat_history_text}\n\n")
+
+            result = self.llm_service.determine_input_type(chat_history_text)
             suggestions = result.get("suggestions", [])
             
+            # print decision 
+            # print(f"Decision: {result.get('decision')}")
+            
             # Check if there's enough info for a domain model based on decision
-            if result.get("decision", False):
-                # Generate domain model description if there's enough information
-                scenario = self.llm_service.generate_scenario(user_input)
+            if result.get("decision", False):          
+                # Generate domain model description using the entire chat history
+                domain_model_description = self.llm_service.generate_domain_model_description(chat_history_text)
                 formatted_suggestions = "**Suggestions to improve your domain model:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
                 
                 # Add suggestions to chat history
                 self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
                 
-                return jsonify({"scenario": scenario, "suggestion": formatted_suggestions})
+                return jsonify({"domain_model_description": domain_model_description, "suggestion": formatted_suggestions})
             else:
                 # Not enough info for domain modeling - show suggestions for what's needed
                 formatted_suggestions = "**To create a domain model, I need more information:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
@@ -67,20 +78,20 @@ class ChatController:
             return jsonify({"error": "An error occurred while storing the name"}), 500
     
     def generate_uml(self):
-        """Generate UML diagram from scenario"""
+        """Generate UML diagram from domain model description"""
         try:
-            scenario_text = request.json.get("scenarioText", "").strip()
-            if not scenario_text:
+            domain_model_description_text = request.json.get("domainModelDescriptionText", "").strip()
+            if not domain_model_description_text:
                 return jsonify({"error": "Domain Model Description is required"}), 400
 
             client = self.llm_service.client
-            plant_uml = gpt_v2_interface(scenario_text, client)
+            plant_uml = gpt_v2_interface(domain_model_description_text, client)
             return jsonify({"plantuml": plant_uml})
         except Exception as e:
             print(f"Error generating UML: {e}")
             return jsonify({"error": "An error occurred while generating the UML"}), 500
     
-    def get_current_scenario(self):
-        """Retrieve the current scenario"""
-        scenario = self.llm_service.get_current_scenario()
-        return jsonify({"scenario": scenario})
+    def get_current_domain_model_description(self):
+        """Retrieve the current domain model description"""
+        domain_model_description = self.llm_service.get_current_domain_model_description()
+        return jsonify({"domain_model_description": domain_model_description})

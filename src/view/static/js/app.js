@@ -4,11 +4,11 @@
  */
 
 // Main application initialization
-document.addEventListener("DOMContentLoaded", () => {
-    // Initialize the application
-    const app = new DomainModellingApp();
-    app.initialize();
-});
+// document.addEventListener("DOMContentLoaded", () => {
+//     // Initialize the application
+//     const app = new DomainModellingApp();
+//     app.initialize();
+// });
 
 /**
  * Main Application Controller
@@ -49,12 +49,12 @@ class DomainModellingApp {
         this.views.projectView.bindConfirmSelection();
         this.views.umlView.bindGenerateUML();
         
-        // Database submission
-        this.views.projectView.bindSubmitToDatabase(() => ({
+        // Database submission - renamed to bindSaveToDatabase
+        this.views.projectView.bindSaveToDatabase(() => ({
             project_name: this.views.projectView.getProjectData().projectName,
             file_name: this.views.projectView.getProjectData().fileName,
             username: this.sessionModel.getSavedName() || "Anonymous",
-            scenario: this.views.umlView.getScenarioText() === "No detailed description provided." ? null : this.views.umlView.getScenarioText(),
+            domain_model_description: this.views.umlView.getDomainModelDescriptionText() === "No detailed description provided." ? null : this.views.umlView.getDomainModelDescriptionText(),
             plant_uml: this.views.umlView.getPlantUMLText() === "" ? null : this.views.umlView.getPlantUMLText(),
             chat_history: this.views.chatView.getChatHistory()
         }));
@@ -119,10 +119,10 @@ class DomainModellingApp {
 
                 if (data.error) {
                     this.views.chatView.displayErrorMessage(data.error);
-                } else if (data.scenario) {
+                } else if (data.domain_model_description) {
                     // Display domain model description and suggestion
-                    this.views.umlView.setScenario(data.scenario);
-                    this.views.chatView.displayBotMessage(data.suggestion); // Updated from "suggestion" to "suggestion"
+                    this.views.umlView.setDomainModelDescription(data.domain_model_description);
+                    this.views.chatView.displayBotMessage(data.suggestion);
                     this.views.chatView.showActionButtons();
                 } else {
                     // General response
@@ -389,9 +389,6 @@ class ProjectView {
             
             // Fetch files for the selected project
             this.fetchFiles(projectName);
-            
-            // Rebind the create file button with the current project context
-            this.bindCreateFile();
         });
         
         // Handle back button click to return to project selection
@@ -418,19 +415,28 @@ class ProjectView {
     }
     
     bindCreateFile() {
-        // Remove any existing event listener to prevent duplicates
-        const createFileBtn = this.elements.createFileBtn;
-        const newCreateFileBtn = createFileBtn.cloneNode(true);
-        createFileBtn.parentNode.replaceChild(newCreateFileBtn, createFileBtn);
-        this.elements.createFileBtn = newCreateFileBtn;
+        // Check if the button exists first
+        if (!this.elements.createFileBtn) {
+            console.error("Create File button not found");
+            return;
+        }
         
-        // Add event listener with debugging
+        // Clone the button to remove all existing event listeners
+        const oldBtn = this.elements.createFileBtn;
+        const newBtn = oldBtn.cloneNode(true);
+        if (oldBtn.parentNode) {
+            oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+            // Update the reference in the elements object
+            this.elements.createFileBtn = newBtn;
+        } else {
+            console.error("Create File button parent node not found");
+            // Just use the existing button if replacement fails
+        }
+
+        // Add event listener to the button (either new or existing)
         this.elements.createFileBtn.addEventListener("click", () => {
-            
             // Get project name directly from the selectedProject variable 
-            // which is set during the transition to step 2
             const projectName = this.selectedProject;
-            
             
             if (!projectName) {
                 alert("Please select a project first.");
@@ -452,9 +458,7 @@ class ProjectView {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ project_name: projectName, file_name: fileName }),
             })
-                .then(response => {
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
                     this.elements.createFileBtn.disabled = false;
                     this.elements.createFileBtn.textContent = "Create New File";
@@ -516,7 +520,7 @@ class ProjectView {
         });
     }
     
-    bindSubmitToDatabase(handler) {
+    bindSaveToDatabase(handler) {
         // Use element from the class properties
         if (!this.elements.saveToDatabaseBtn) {
             console.error("Save to Database button not found");
@@ -541,7 +545,14 @@ class ProjectView {
             fetch("/save_to_database", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    project_name: data.project_name,
+                    file_name: data.file_name,
+                    username: data.username,
+                    domain_model_description: data.domain_model_description,
+                    plant_uml: data.plant_uml,
+                    chat_history: data.chat_history
+                }),
             })
             .then(response => response.json())
             .then(result => {
@@ -656,13 +667,75 @@ class ProjectView {
 class UMLView {
     constructor() {
         this.elements = {
-            plantumlText: document.getElementById("plantumlText"),
-            scenarioText: document.getElementById("scenarioText")
+            // Make sure we're properly selecting the domain model text element
+            domainModelText: document.getElementById('domainModelText'),
+            domainModelLoading: document.getElementById('domainModelLoading'),
+            plantumlText: document.getElementById('plantumlText'),
+            plantumlLoading: document.getElementById('plantumlLoading'),
+            generateUMLBtn: document.getElementById('generateUMLBtn')
         };
+
+        // Add validation to ensure all elements were found
+        this.validateElements();
+    }
+
+    // Add this method to check that all elements exist
+    validateElements() {
+        const missingElements = [];
         
-        this.displayDefaultPlantUML();
+        // Check each element and collect any that are missing
+        for (const [key, element] of Object.entries(this.elements)) {
+            if (!element) {
+                missingElements.push(key);
+            }
+        }
+    }
+
+    // Update the setDomainModelDescription method to check for the element's existence
+    setDomainModelDescription(domainModelDescription) {
+        if (!this.elements.domainModelText) {
+            console.error("domainModelText element not found in the DOM");
+            return; // Exit the function early if the element doesn't exist
+        }
+        
+        this.elements.domainModelText.textContent = domainModelDescription || "No detailed description provided.";
+        
+        if (domainModelDescription && domainModelDescription.trim()) {
+            this.generateUMLFromDomainModelDescription(domainModelDescription);
+        }
     }
     
+    // Similar checks should be added to other methods that access DOM elements
+    generateUMLFromDomainModelDescription(domainModelDescriptionText) {
+        if (!this.elements.plantumlText) {
+            console.error("plantumlText element not found in the DOM");
+            return;
+        }
+        
+        // Show loading state
+        this.elements.plantumlText.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+        
+        fetch("/generate_uml", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ domainModelDescriptionText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                this.elements.plantumlText.textContent = "Error generating UML: " + data.error;
+            } else if (data.plantuml) {
+                this.setPlantUML(data.plantuml);
+            } else {
+                this.elements.plantumlText.textContent = "No UML diagram could be generated from the provided domain model description.";
+            }
+        })
+        .catch(err => {
+            console.error("Error generating UML:", err);
+            this.elements.plantumlText.textContent = "Failed to generate UML diagram. Please try again.";
+        });
+    }
+
     displayDefaultPlantUML() {
         const staticUML = `@startuml
 ' Domain Model Example
@@ -750,4 +823,14 @@ package "Business Domain" {
     getPlantUMLText() {
         return this.elements.plantumlText.textContent.trim();
     }
+    
+    getDomainModelDescriptionText() {
+        return this.elements.domainModelText.textContent.trim();
+    }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize app only after DOM is loaded
+    const app = new DomainModellingApp();
+    app.initialize();
+});

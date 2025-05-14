@@ -60,18 +60,18 @@ def generate_uml():
     controller = get_chat_controller()
     return controller.generate_uml()
 
-@app.route("/get_scenarios", methods=["GET"])
-def get_scenarios():
-    """Get scenarios endpoint."""
+@app.route("/get_domain_model_descriptions", methods=["GET"])
+def get_domain_model_descriptions():
+    """Get domain model descriptions endpoint."""
     controller = get_chat_controller()
-    return controller.get_current_scenario()
+    return controller.get_current_domain_model_description()
 
 # Project routes
 @app.route("/save_to_database", methods=["POST"])
 def save_to_database():
     """Save to database endpoint."""
     controller = get_project_controller()
-    return controller.submit_to_database()  # Keep the controller method name the same
+    return controller.save_to_database()
 
 @app.route("/get_projects", methods=["GET"])
 def get_projects():
