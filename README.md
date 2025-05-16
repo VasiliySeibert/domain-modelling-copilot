@@ -10,6 +10,7 @@
 -  Classifies input as "General" or "Scenario" intelligently.
 -  Generates detailed scenarios and concise summaries using GPT models.
 -  Converts extracted domain structures into **PlantUML** diagrams.
+-  Stores and manages data using **MongoDB**.
 -  Includes a full test suite for backend routes with **pytest**.
 
 ---
@@ -18,10 +19,11 @@
 
 - **Python 3.9+**
 - **Flask** (Web Framework)
-- **OpenAI API** (Azure variant support)
-- **PlantUML** (Diagram generation)
+- **OpenAI API** (Azure-compatible)
+- **MongoDB** (Database)
+- **PlantUML** (Diagram rendering)
+- **dotenv** (Environment configuration)
 - **pytest** (Testing)
-- **dotenv** (Environment management)
 
 ---
 
@@ -54,6 +56,7 @@ EMBEDDING_MODEL="text-embedding-3-small"
 EMBEDDING_API_VERSION="2023-05-15"
 ENDPOINT="https://your-azure-endpoint/"
 AZURE_OPENAI_API_KEY="your-api-key"
+MONGO_URI="mongodb://localhost:27017/domain_modelling"
 ```
 
 ### 5. Run the application
@@ -61,3 +64,13 @@ AZURE_OPENAI_API_KEY="your-api-key"
 python app.py
 ```
 Visit: http://localhost:5000
+
+### MongoDB Setup
+1. Install MongoDB: MongoDB Installation Guide
+
+2. Start MongoDB Server:
+
+```bash
+mongod
+```
+03. Database Connection: The app connects to MongoDB using the URI in .env (MONGO_URI). The database and collections will be created automatically.
