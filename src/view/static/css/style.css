@@ -56,12 +56,14 @@ body {
 }
 
 .response-area {
-    height: 200px; /* Reduced height for the response area */
+    height: 150px; /* Reduced from 200px */
+    max-height: 150px;
     background: #ffffff;
     border: 1px solid #ddd;
     padding: 15px;
     margin-top: 15px;
     border-radius: 5px;
+    font-size: 0.9rem;
     overflow-y: auto; /* Enable scrolling for long content */
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle inset shadow */
 }
@@ -161,11 +163,13 @@ button:hover {
 
 /* UML Section */
 .uml-section {
-    height: 200px; /* Reduced height for the UML section */
+    height: 170px; /* Reduced from 200px */
+    max-height: 170px;
     background: #ffffff;
     border: 1px solid #ddd;
     padding: 10px;
     border-radius: 5px;
+    font-size: 0.9rem;
     overflow-y: auto; /* Enable scrolling for UML content */
 }
 
@@ -379,3 +383,93 @@ header {
     font-family: 'Courier New', Courier, monospace;
 }
 
+/* Add these styles for the step-by-step modal */
+
+/* Step transitions */
+.step-container {
+    transition: all 0.3s ease;
+    padding: 10px 0;
+}
+
+/* Style for the selected project name */
+#selectedProjectName {
+    color: #007bff;
+    font-size: 1.1em;
+}
+
+/* Back button */
+#backToProjectSelectionBtn {
+    font-size: 0.85em;
+    padding: 4px 10px;
+    margin-top: -5px;
+}
+
+/* Step indicators */
+.text-muted {
+    font-size: 0.85em;
+}
+
+/* Improve button spacing */
+.modal-footer {
+    justify-content: space-between;
+    padding: 15px 20px;
+}
+
+/* Improve headings for the domain model section */
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.card-title i {
+    color: #007bff;
+}
+
+/* More compact section spacing */
+.mb-4 {
+    margin-bottom: 1rem !important; /* Reduced spacing between sections */
+}
+
+/* Make tabs more compact */
+.nav-pills .nav-link {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+/* Make tab content area more compact */
+.tab-content {
+    padding-top: 0.75rem !important;
+}
+
+/* Domain Model Header Styling */
+.domain-model-header {
+    border-bottom: 2px solid #007bff;
+    margin-bottom: 5px !important;
+}
+
+.model-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0056b3;
+    margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.model-title i {
+    color: #007bff;
+}
+
+.model-subtitle {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0;
+    padding-left: 2px;
+}
