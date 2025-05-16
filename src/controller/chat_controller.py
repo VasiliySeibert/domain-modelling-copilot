@@ -50,6 +50,7 @@ class ChatController:
                 self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
                 
                 return jsonify({"domain_model_description": domain_model_description, "suggestion": formatted_suggestions})
+            
             else:
                 # Not enough info for domain modeling - show suggestions for what's needed
                 formatted_suggestions = "**To create a domain model, I need more information:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
@@ -57,7 +58,6 @@ class ChatController:
                 # Add suggestions to chat history
                 self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
                 
-                # Return response in a format that won't trigger domain model description display
                 return jsonify({"response": formatted_suggestions, "history": self.llm_service.get_chat_history()})
 
         except Exception as e:
