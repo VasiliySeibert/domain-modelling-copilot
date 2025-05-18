@@ -16,9 +16,7 @@ class ChatController:
             if not user_input:
                 return jsonify({"error": "User input is required"}), 400
 
-            user_name = session.get("user_name")
-            if not user_name:
-                return jsonify({"error": "User name is not set"}), 400
+            
             
             # Add current input to chat history
             self.llm_service.add_to_chat_history("user", user_input)
@@ -64,18 +62,7 @@ class ChatController:
             print(f"Error in chat request: {e}")
             return jsonify({"error": "An unexpected error occurred"}), 500
     
-    def submit_name(self):
-        """Store user's name in session"""
-        try:
-            user_name = request.json.get("name", "").strip()
-            if not user_name:
-                return jsonify({"error": "Name is required"}), 400
-
-            session["user_name"] = user_name
-            return jsonify({"message": "Name saved successfully!", "name": user_name})
-        except Exception as e:
-            print(f"Error storing name: {e}")
-            return jsonify({"error": "An error occurred while storing the name"}), 500
+    # Remove submit_name method
     
     def generate_uml(self):
         """Generate UML diagram from domain model description"""

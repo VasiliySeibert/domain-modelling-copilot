@@ -1,9 +1,9 @@
 import os
 from pymongo import MongoClient
-from datetime import datetime  # Add this import
+from datetime import datetime
 
 class ProjectService:
-    """Service for project database operations."""
+    """Service for project database operations with simplified structure."""
     
     def __init__(self):
         """Initialize connection to MongoDB."""
@@ -22,45 +22,6 @@ class ProjectService:
             self.db = None
             self.projects_collection = None
     
-    def save_to_database(self, project_name, file_name, username, domain_model_description, plant_uml, chat_history):
-        """Save work results to the database."""
-        if not project_name or not file_name:
-            return {"error": "Project name and file name are required."}, 400
-            
-        # Check if project exists
-        project = self.projects_collection.find_one({"project_name": project_name})
-        if not project:
-            return {"error": f"Project '{project_name}' not found."}, 404
-            
-        # Check if file exists in the project
-        file_exists = False
-        for file in project.get("files", []):
-            if file.get("file_name") == file_name:
-                file_exists = True
-                break
-                
-        if not file_exists:
-            return {"error": f"File '{file_name}' not found in project '{project_name}'."}, 404
-            
-        # Update file content
-        result = self.projects_collection.update_one(
-            {"project_name": project_name, "files.file_name": file_name},
-            {
-                "$set": {
-                    "files.$.domain_model_description": domain_model_description,
-                    "files.$.plant_uml": plant_uml,
-                    "files.$.chat_history": chat_history,
-                    "files.$.last_modified_by": username,
-                    "files.$.last_modified_at": datetime.now()
-                }
-            }
-        )
-            
-        if result.modified_count > 0:
-            return {"message": "File updated successfully."}, 200
-        else:
-            return {"error": "Failed to update file."}, 500
-    
     def get_projects(self):
         """Get list of all projects."""
         try:
@@ -71,74 +32,108 @@ class ProjectService:
             print(f"Error retrieving projects: {e}")
             return {"error": "Failed to retrieve projects."}, 500
     
-    def create_project(self, project_name, username):
-        """Create a new project."""
-        if not project_name:
-            return {"error": "Project name is required."}, 400
+    def create_project(self):
+        """Create a new project with auto-generated name."""
+        try:
+            # Get the count of existing projects to generate the next project number
+            project_count = self.projects_collection.count_documents({})
+            project_name = f"Project {project_count + 1}"
             
-        # Check if project already exists
-        existing_project = self.projects_collection.find_one({"project_name": project_name})
-        if existing_project:
-            return {"error": f"Project '{project_name}' already exists."}, 409
-            
-        # Create new project
-        project = {
-            "project_name": project_name,
-            "created_by": username,
-            "created_at": datetime.now(),
-            "files": []
-        }
-            
-        result = self.projects_collection.insert_one(project)
-        if result.inserted_id:
-            return {"message": f"Project '{project_name}' created successfully."}, 201
-        else:
-            return {"error": "Failed to create project."}, 500
+            # Check if this name already exists (unlikely but possible if projects were deleted)
+            while self.projects_collection.find_one({"project_name": project_name}):
+                project_count += 1
+                project_name = f"Project {project_count + 1}"
+                
+            # Create new project with simplified structure (no files array)
+            project = {
+                "project_name": project_name,
+                "created_at": datetime.now(),
+                "domain_model_description": None,
+                "plant_uml": None,
+                "chat_history": []
+            }
+                
+            result = self.projects_collection.insert_one(project)
+            if result.inserted_id:
+                return {"message": f"Project '{project_name}' created successfully.", "project_name": project_name}, 201
+            else:
+                return {"error": "Failed to create project."}, 500
+        except Exception as e:
+            print(f"Error creating project: {e}")
+            return {"error": f"Failed to create project: {str(e)}"}, 500
     
-    def create_file(self, project_name, file_name):
-        """Create a new file within a project."""
-        if not project_name or not file_name:
-            return {"error": "Project name and file name are required."}, 400
-            
-        # Check if project exists
-        project = self.projects_collection.find_one({"project_name": project_name})
-        if not project:
-            return {"error": f"Project '{project_name}' not found."}, 404
-            
-        # Check if file already exists in the project
-        for file in project.get("files", []):
-            if file.get("file_name") == file_name:
-                return {"error": f"File '{file_name}' already exists in project '{project_name}'."}, 409
-            
-        # Create new file
-        new_file = {
-            "file_name": file_name,
-            "created_at": datetime.now(),
-            "domain_model_description": None,
-            "plant_uml": None,
-            "chat_history": []
-        }
-            
-        result = self.projects_collection.update_one(
-            {"project_name": project_name},
-            {"$push": {"files": new_file}}
-        )
-            
-        if result.modified_count > 0:
-            return {"message": f"File '{file_name}' created successfully in project '{project_name}'."}, 201
-        else:
-            return {"error": "Failed to create file."}, 500
+    def rename_project(self, old_project_name, new_project_name):
+        """Rename an existing project."""
+        try:
+            if not new_project_name or not old_project_name:
+                return {"error": "Both old and new project names are required."}, 400
+                
+            # Check if the new name already exists
+            if self.projects_collection.find_one({"project_name": new_project_name}):
+                return {"error": f"Project '{new_project_name}' already exists."}, 409
+                
+            # Update the project name
+            result = self.projects_collection.update_one(
+                {"project_name": old_project_name},
+                {"$set": {"project_name": new_project_name}}
+            )
+                
+            if result.modified_count > 0:
+                return {"message": f"Project renamed from '{old_project_name}' to '{new_project_name}' successfully."}, 200
+            else:
+                return {"error": f"Project '{old_project_name}' not found."}, 404
+        except Exception as e:
+            print(f"Error renaming project: {e}")
+            return {"error": f"Failed to rename project: {str(e)}"}, 500
     
-    def get_files(self, project_name):
-        """Get list of files for a project."""
-        if not project_name:
-            return {"error": "Project name is required."}, 400
-            
-        # Get project with files
-        project = self.projects_collection.find_one({"project_name": project_name})
-        if not project:
-            return {"error": f"Project '{project_name}' not found."}, 404
-            
-        # Extract file names
-        file_names = [file["file_name"] for file in project.get("files", [])]
-        return {"files": file_names}, 200
+    def get_project_data(self, project_name):
+        """Get all data for a specific project."""
+        try:
+            if not project_name:
+                return {"error": "Project name is required."}, 400
+                
+            # Get the project data
+            project = self.projects_collection.find_one(
+                {"project_name": project_name}, 
+                {"_id": 0, "domain_model_description": 1, "plant_uml": 1, "chat_history": 1}
+            )
+                
+            if not project:
+                return {"error": f"Project '{project_name}' not found."}, 404
+                
+            return {"project_data": project}, 200
+        except Exception as e:
+            print(f"Error retrieving project data: {e}")
+            return {"error": f"Failed to retrieve project data: {str(e)}"}, 500
+    
+    def save_project_data(self, project_name, domain_model_description=None, plant_uml=None, chat_history=None):
+        """Save project data directly to the project document."""
+        try:
+            if not project_name:
+                return {"error": "Project name is required."}, 400
+                
+            # Build update document with only the fields that are provided
+            update_doc = {}
+            if domain_model_description is not None:
+                update_doc["domain_model_description"] = domain_model_description
+            if plant_uml is not None:
+                update_doc["plant_uml"] = plant_uml
+            if chat_history is not None:
+                update_doc["chat_history"] = chat_history
+                
+            if not update_doc:
+                return {"error": "No data provided to update."}, 400
+                
+            # Update the project
+            result = self.projects_collection.update_one(
+                {"project_name": project_name},
+                {"$set": update_doc}
+            )
+                
+            if result.modified_count > 0:
+                return {"message": f"Project '{project_name}' updated successfully."}, 200
+            else:
+                return {"error": f"Project '{project_name}' not found or no changes made."}, 404
+        except Exception as e:
+            print(f"Error saving project data: {e}")
+            return {"error": f"Failed to save project data: {str(e)}"}, 500
