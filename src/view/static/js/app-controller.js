@@ -22,29 +22,25 @@ class DomainModellingApp {
         this.autoSelectProject();
     }
     
-    // Add new method to auto-select a project
+    // Update the autoSelectProject method to always create a new project
     autoSelectProject() {
-        fetch("/get_projects")
+        // Always create a new project instead of selecting an existing one
+        fetch("/create_project", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+        })
             .then((response) => response.json())
             .then((data) => {
-                if (data.projects && data.projects.length > 0) {
-                    // Select the first project
-                    this.views.projectView.selectedProject = data.projects[0];
-                    console.log(`Auto-selected project: ${data.projects[0]}`);
-                } else {
-                    // Create a new project if none exists
-                    fetch("/create_project", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({})
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            if (data.project_name) {
-                                this.views.projectView.selectedProject = data.project_name;
-                                console.log(`Created and selected new project: ${data.project_name}`);
-                            }
-                        });
+                if (data.project_name) {
+                    this.views.projectView.selectedProject = data.project_name;
+                    console.log(`Created and selected new project: ${data.project_name}`);
+                    
+                    // Update project display if it exists
+                    const currentProjectDisplay = document.getElementById('currentProjectDisplay');
+                    if (currentProjectDisplay) {
+                        currentProjectDisplay.textContent = data.project_name;
+                    }
                 }
             });
     }

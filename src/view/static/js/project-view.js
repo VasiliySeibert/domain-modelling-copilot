@@ -142,16 +142,56 @@ class ProjectView {
                 return;
             }
             
-            // Close modal - using Bootstrap 5 method
-            const modalElement = document.getElementById('projectModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            modal.hide();
+            // Save current project data before switching projects
+            const previousProject = document.getElementById('currentProjectDisplay')?.textContent;
             
-            // Show confirmation
-            alert(`Selected project: "${this.selectedProject}"`);
-            
-            // Load project data
-            this.loadProjectData(this.selectedProject);
+            if (previousProject && previousProject !== this.selectedProject) {
+                // Get current app instance to access save method
+                const saveCurrentProject = () => {
+                    // Find all app instances in the page
+                    const appInstance = window.appInstance;
+                    
+                    if (appInstance) {
+                        // Manually trigger save for the current project
+                        appInstance.interactionOccurred = true; // Make sure we save even without explicit interaction
+                        appInstance.saveProjectData();
+                        console.log("Current project data saved before switching");
+                        
+                        // Wait a short time to ensure save completes before loading new project
+                        setTimeout(() => {
+                            // Close modal - using Bootstrap 5 method
+                            const modalElement = document.getElementById('projectModal');
+                            const modal = bootstrap.Modal.getInstance(modalElement);
+                            modal.hide();
+                            
+                            // Load new project data
+                            this.loadProjectData(this.selectedProject);
+                        }, 300);
+                    } else {
+                        console.error("Could not find app instance to save current project");
+                        
+                        // Still close modal and load project if app instance not found
+                        const modalElement = document.getElementById('projectModal');
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        modal.hide();
+                        
+                        // Load project data
+                        this.loadProjectData(this.selectedProject);
+                    }
+                };
+                
+                // Execute save
+                saveCurrentProject();
+            } else {
+                // If no previous project or same project, just load
+                // Close modal - using Bootstrap 5 method
+                const modalElement = document.getElementById('projectModal');
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                modal.hide();
+                
+                // Load project data
+                this.loadProjectData(this.selectedProject);
+            }
         });
     }
     

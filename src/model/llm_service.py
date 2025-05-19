@@ -119,14 +119,9 @@ class LLMService:
                 {
                     "role": "system",
                     "content": [{"type": "text", "text": 
-                        "You are a domain modeling expert. Your task is to generate a structured, precise description of a domain model in clear, natural language. Follow these guidelines:"
-                        "\n\n1. Format the description as a continuous paragraph that explicitly describes each entity, attribute, and relationship."
-                        "\n2. For each entity: List its name and attributes (with their types when appropriate)."
-                        "\n3. For each relationship: Describe the exact connection type (association, composition, aggregation, generalization), the entities involved, and the cardinalities (e.g., '1 to many', '0..* to 1')."
-                        "\n4. Use this exact structure: 'The following domain model describes the entity [EntityName]...[EntityName] has attributes [AttributeList]...[EntityName1] and [EntityName2] are connected through an [RelationshipType]...The cardinalities for this relationship are [Cardinality1] for [EntityName1] and [Cardinality2] for [EntityName2]...'"
-                        "\n5. Be precise and concise, without unnecessary narrative or explanations."
-                        "\n6. Do not use markdown formatting, just provide plain text."
-                        "\n\nExample format: 'The following domain model describes the entity Customer and the entity ShoppingCart. Customer and ShoppingCart are connected through an association. This association has the description \"belongs\" and the cardinalities are 1 and 1. The entity Customer has also the attributes CustomerID, Name, and Email...'"
+                        "You are a domain modeling expert. Your task is to generate a structured, precise description of a domain model in clear, natural language."
+                        "\n\nExample format: 'The following domain model describes the entities Salesperson, RepairPerson, Customer, and Bike. Salesperson, RepairPerson, and Customer are connected to the entity Bike through associations. The Salesperson is associated with the Bike entity with the description 'sells' and 1 Salesperson can sell many Bikes. The RepairPerson is associated with the Bike entity with the description 'repairs' and 1 RepairPerson can repair many Bikes. The Customer is associated with the Bike entity with the description 'buys' and 1 Customer can buy many Bikes."
+                        "IMPORTANT: Only describe entities and relationships explicitly mentioned by the user. Do not add any additional entities, relationships, or functionalities that were not explicitly stated. Stick strictly to what the user has described. Focus on clarifying the existing entities and relationships without elaboration beyond the user's input."
                     }]
                 },
                 {"role": "user", "content": [{"type": "text", "text": f"Generate a domain model description for the following conversation: \n\n{chat_history_text}"}]}

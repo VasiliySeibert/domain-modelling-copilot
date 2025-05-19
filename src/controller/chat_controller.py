@@ -42,7 +42,7 @@ class ChatController:
             if result.get("decision", False):          
                 # Generate domain model description using the entire chat history
                 domain_model_description = self.llm_service.generate_domain_model_description(chat_history_text)
-                formatted_suggestions = "**Suggestions to improve your domain model:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
+                formatted_suggestions = "**Domain Model Summary:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
                 
                 # Add suggestions to chat history
                 self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
