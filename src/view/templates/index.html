@@ -122,28 +122,23 @@
                                 <!-- Visualization Sub-Tabs -->
                                 <ul class="nav nav-tabs" role="tablist">
                                     <li class="nav-item" role="presentation">
-                                        <button class="nav-link active px-4" id="structured-text-tab" data-bs-toggle="tab"
-                                                data-bs-target="#plantuml-content" type="button" role="tab">
-                                            <i class="bi bi-code-square me-1"></i> Structured Text View
+                                        <button class="nav-link active px-4" id="graphical-view-tab" data-bs-toggle="tab"
+                                                data-bs-target="#domainmodel-content" type="button" role="tab">
+                                            <i class="bi bi-diagram-2 me-1"></i> Graphical View
                                         </button>
                                     </li>
                                     <li class="nav-item" role="presentation">
-                                        <button class="nav-link px-4" id="graphical-view-tab" data-bs-toggle="tab"
-                                                data-bs-target="#domainmodel-content" type="button" role="tab">
-                                            <i class="bi bi-diagram-2 me-1"></i> Graphical View
+                                        <button class="nav-link px-4" id="structured-text-tab" data-bs-toggle="tab"
+                                                data-bs-target="#plantuml-content" type="button" role="tab">
+                                            <i class="bi bi-code-square me-1"></i> Structured Text View
                                         </button>
                                     </li>
                                 </ul>
 
                                 <!-- Visualization Tab Content -->
                                 <div class="tab-content">
-                                    <!-- i. Structured Text View (PlantUML) -->
-                                    <div class="tab-pane fade show active" id="plantuml-content" role="tabpanel">
-                                        <div id="plantumlText" class="uml-section font-monospace" style="font-size: 0.9rem; color: var(--text-primary);"></div>
-                                    </div>
-
-                                    <!-- ii. Graphical View -->
-                                    <div class="tab-pane fade" id="domainmodel-content" role="tabpanel">
+                                    <!-- i. Graphical View -->
+                                    <div class="tab-pane fade show active" id="domainmodel-content" role="tabpanel">
                                         <div class="text-center py-4">
                                             <div id="graphicalUmlView">
                                                 <div id="plantUmlDiagram">
@@ -155,6 +150,11 @@
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <!-- ii. Structured Text View (PlantUML) -->
+                                    <div class="tab-pane fade" id="plantuml-content" role="tabpanel">
+                                        <div id="plantumlText" class="uml-section font-monospace" style="font-size: 0.9rem; color: var(--text-primary);"></div>
                                     </div>
                                 </div>
                             </div>
