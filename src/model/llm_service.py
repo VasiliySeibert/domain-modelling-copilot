@@ -15,54 +15,86 @@ class LLMService:
     
     def determine_input_type(self, chat_history_text):
         """
-        Determine if the input has enough information for domain model description."""
+        Determine if the input has enough information for domain model description or if it's an update to an existing one.
+        Also detects irrelevant/casual messages that don't require domain model changes.
+        """
         
         try:
             functions = [
                 {
                     "name": "get_decision",
-                    "description": "Returns a decision as True or False along with suggestions",
+                    "description": "Returns a decision about domain model generation and appropriate response",
                     "parameters": {
                         "type": "object",
-                        "required": ["criteria", "suggestions", "decision"],
+                        "required": ["decision", "is_update", "is_casual_comment", "suggestions"],
                         "properties": {
-                            "criteria": {
-                                "type": "object",
-                                "required": ["condition", "value"],
-                                "properties": {
-                                    "value": {
-                                        "type": "string",
-                                        "description": "The value that the condition is compared against."
-                                    },
-                                    "condition": {
-                                        "type": "string",
-                                        "description": "Are at least three entities and two relationships provided in the description to allow for a basic domain model?"
-                                    }
-                                }
-                            },
                             "decision": {
                                 "type": "boolean",
-                                "description": "The decision result, either True or False"
+                                "description": "True if there's enough information for a domain model, False otherwise"
+                            },
+                            "is_update": {
+                                "type": "boolean", 
+                                "description": "True if this is an update to an existing domain model rather than a first request"
+                            },
+                            "is_casual_comment": {
+                                "type": "boolean",
+                                "description": "True if this is just a casual comment (like 'wow', 'nice') that doesn't require updating the domain model"
                             },
                             "suggestions": {
                                 "type": "array",
                                 "items": {
                                     "type": "string",
-                                    "description": "A suggestion related to the decision"
+                                    "description": "A suggestion or response line"
                                 },
-                                "description": "When decision=true: List identified entities, relationships, and improvement ideas. When decision=false: List what's missing and questions to ask."
+                                "description": "Array of strings that form the complete response to show the user"
                             }
                         }
                     }
                 }
             ]
 
-            prompts = "You are an expert domain modelling engineer according to E. Evans, Domain-driven design: tackling complexity in the heart of software. Addison-Wesley Professional, 2004. You specialized in domain models expressed in UML. Your job is to decide if the user has provided enough information, for a domain model. e.g. if the user just provides his name, information about general things like the weather or just requests some information, then you as an expert don't have enough information to derive a domain model from it. You need some description about a customer domain. You will receive a user input or chat history and your job is to decide if the information in this text is sufficient for creating a domain model. Keep in mind that you talk to a customer, don't be too hard if not all attributes, entities and relationships are provided. To get started you only need at minimum three entities and two relationships. the user cannot be a entity.\n\ne.g. if you are provided with something like \"I own a bicycle store in Hamburg. We sell E bikes and regular bikes.\" then you can already derive a domain model from it. \n\nIf your decision is that you don't have enough information, then please provide information about what else you need for a domain model. Also provide maximum 1 question that the user needs to be asked for a proper domain model. the question must be formulated in a way so that if it was answered, then a domain model can be generated."
-            
-            # "I will provide you chat history as a single string and you have to use as a context and based on that you have to keep all questions from in mind."
+            system_prompt = """You are an expert domain modeling engineer specialized in UML and domain-driven design.
+
+YOUR TASK: Analyze chat history to determine if a domain model can be generated, updated, or if the message is unrelated to domain modeling.
+
+MESSAGE CLASSIFICATION:
+1. INITIAL DOMAIN MODEL REQUEST: When user first describes multiple entities (3+) and relationships (2+) in their domain.
+   - Example: "I want to open a store with products, customers, and employees. Customers buy products and employees sell them."
+
+2. DOMAIN MODEL UPDATE: When user adds new entities or relationships to an existing model.
+   - Example: "Now I also want to add suppliers who provide products to the store."
+   - Look for phrases like "add", "also", "now include", "additionally"
+
+3. CASUAL COMMENT: Brief reactions that don't add domain information.
+   - Examples: "wow", "nice", "thank you", "looks good", "great", "awesome", "perfect"
+   - IMPORTANT: If a domain model exists and user sends ONLY praise/acknowledgment, classify as CASUAL
+
+4. QUESTION/CLARIFICATION: User asks about the domain model without adding new information.
+   - Example: "What does this relationship mean?" or "Can you explain this part?"
+
+5. OFF-TOPIC: Message unrelated to domain modeling.
+   - Example: "What's the weather today?"
+
+HOW TO DETERMINE IF A DOMAIN MODEL EXISTS:
+- Look for previous bot messages containing detailed entity descriptions
+- Look for phrases like "Here's the domain model" or "I've updated the domain model"
+
+RESPONSE GUIDELINES:
+- For CASUAL COMMENTS: Acknowledge without regenerating model. Use varied responses like:
+  "Glad you like it! Let me know if you want to add more entities or relationships."
+  "Thanks! I'm here if you need to make any changes to the model."
+
+- For DOMAIN MODEL UPDATES: Confirm the update with specific details:
+  "Perfect! I've added **Truck** as a new entity to the domain model."
+  "Great addition! I've updated the model to include the **Payment** relationship you mentioned."
+
+- For INITIAL REQUESTS: Neutral response with helpful suggestions.
+
+IMPORTANT: Format all entity and relationship names with **bold** in your response.
+"""
             
             messages = [
-                {"role": "system", "content": [{"type": "text", "text": prompts}]},
+                {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
                 {"role": "user", "content": [{"type": "text", "text": chat_history_text}]}
             ]
 
@@ -73,35 +105,30 @@ class LLMService:
                 function_call={"name": "get_decision"}
             )
             
-            # Extract function call result
             function_call = response.choices[0].message.function_call
-
-            # Print in JSON format
-            function_call_dict = {
-                "name": function_call.name,
-                "arguments": json.loads(function_call.arguments) if hasattr(function_call, "arguments") else None
-            }
-
-            # Print the function call details
-            print(json.dumps(function_call_dict, indent=2))
             
             if function_call and function_call.name == "get_decision":
                 result = json.loads(function_call.arguments)
                 
-                # Ensure result contains suggestions
+                # Ensure all required fields are present with sensible defaults
                 if "suggestions" not in result or not result["suggestions"]:
-                    if result.get("decision", False):
-                        result["suggestions"] = ["Please provide more entities and relationships for the domain model."]
+                    if result.get("is_casual_comment", False):
+                        result["suggestions"] = ["I'm glad you like it! Let me know if you want to make any changes to the domain model."]
+                    elif result.get("is_update", False):
+                        result["suggestions"] = ["I've updated the domain model with your changes."]
+                    elif result.get("decision", False):
+                        result["suggestions"] = ["I've created a domain model based on your description."]
                     else:
-                        result["suggestions"] = ["You have provided sufficient information for creating a domain model."]
+                        result["suggestions"] = ["Please provide more details about the entities and relationships in your domain."]
                 
-                # Return the result with guaranteed suggestions
                 return result
                     
             # Fallback if function call doesn't work as expected
             return {
                 "decision": False, 
-                "suggestions": ["Consider adding more specific entities and relationships."]
+                "is_update": False,
+                "is_casual_comment": False,
+                "suggestions": ["I need more information about your domain to help you. Could you describe the main entities and how they relate to each other?"]
             }
                 
         except Exception as e:
@@ -109,7 +136,9 @@ class LLMService:
             # Fallback with default values
             return {
                 "decision": False,
-                "suggestions": ["Consider adding more specific entities and relationships."]
+                "is_update": False,
+                "is_casual_comment": False,
+                "suggestions": ["I encountered an issue while analyzing your input. Could you try describing your domain again with key entities and relationships?"]
             }
 
     def generate_domain_model_description(self, chat_history_text):
