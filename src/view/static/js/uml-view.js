@@ -176,7 +176,7 @@ package "Business Domain" {
         return this.elements.domainModelText.textContent.trim();
     }
 
-    // Add this method to the UMLView class
+    // Replace the current renderPlantUMLDiagram method with this improved version
     renderPlantUMLDiagram(plantUML) {
         if (!plantUML || !plantUML.trim()) {
             // No PlantUML code to render
@@ -184,9 +184,12 @@ package "Business Domain" {
         }
         
         try {
-            // Encode the PlantUML text for use with the PlantUML server
-            const encodedUML = this.encodePlantUML(plantUML);
-            const imageUrl = `https://www.plantuml.com/plantuml/img/${encodedUML}`;
+            // Use the plantumlEncoder library instead of custom encoding
+            const encodedUML = plantumlEncoder.encode(plantUML);
+            // Use SVG format for better quality
+            const imageUrl = `https://www.plantuml.com/plantuml/svg/${encodedUML}`;
+            
+            console.log("Rendering PlantUML diagram with URL:", imageUrl);
             
             // Find elements
             const umlImage = document.getElementById('umlImage');
@@ -216,13 +219,5 @@ package "Business Domain" {
         } catch (error) {
             console.error("Error rendering PlantUML diagram:", error);
         }
-    }
-
-    // Add PlantUML encoding method
-    encodePlantUML(plantUML) {
-        // PlantUML text encoding function
-        return btoa(unescape(encodeURIComponent(plantUML)))
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_');
     }
 }
