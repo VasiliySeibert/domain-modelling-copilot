@@ -15,10 +15,6 @@ class ChatController:
             user_input = request.json.get("message", "").strip()
             if not user_input:
                 return jsonify({"error": "User input is required"}), 400
-
-            user_name = session.get("user_name")
-            if not user_name:
-                return jsonify({"error": "User name is not set"}), 400
             
             # Add current input to chat history
             self.llm_service.add_to_chat_history("user", user_input)
@@ -32,50 +28,55 @@ class ChatController:
                 for msg in updated_chat_history
             ])
             
-            # print(f"\n\nChat History: {chat_history_text}\n\n")
-
+            # Determine input type with enhanced analysis
             result = self.llm_service.determine_input_type(chat_history_text)
+            
+            # Extract all classification fields
+            decision = result.get("decision", False)
+            is_update = result.get("is_update", False)
+            is_casual_comment = result.get("is_casual_comment", False)
             suggestions = result.get("suggestions", [])
             
-            # print decision 
-            # print(f"Decision: {result.get('decision')}")
+            # Format the response from the suggestions array
+            formatted_suggestions = "\n".join(suggestions) if isinstance(suggestions, list) else suggestions
             
-            # Check if there's enough info for a domain model based on decision
-            if result.get("decision", False):          
-                # Generate domain model description using the entire chat history
+            # Handle each case appropriately
+            if is_casual_comment:
+                # Casual comment - don't regenerate the domain model
+                self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
+                return jsonify({
+                    "response": formatted_suggestions, 
+                    "history": self.llm_service.get_chat_history()
+                })
+                
+            elif decision:
+                # Enough information for domain modeling (either new model or update)
                 domain_model_description = self.llm_service.generate_domain_model_description(chat_history_text)
-                formatted_suggestions = "**Suggestions to improve your domain model:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
                 
-                # Add suggestions to chat history
+                # Add response to chat history
                 self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
                 
-                return jsonify({"domain_model_description": domain_model_description, "suggestion": formatted_suggestions})
-            
+                return jsonify({
+                    "domain_model_description": domain_model_description, 
+                    "suggestion": formatted_suggestions
+                })
+                
             else:
-                # Not enough info for domain modeling - show suggestions for what's needed
-                formatted_suggestions = "**To create a domain model, I need more information:**\n" + "\n".join([f"- {suggestion}" for suggestion in suggestions])
-                
-                # Add suggestions to chat history
+                # Not enough info for domain modeling
                 self.llm_service.add_to_chat_history("assistant", formatted_suggestions)
                 
-                return jsonify({"response": formatted_suggestions, "history": self.llm_service.get_chat_history()})
+                return jsonify({
+                    "response": formatted_suggestions, 
+                    "history": self.llm_service.get_chat_history()
+                })
 
         except Exception as e:
             print(f"Error in chat request: {e}")
+            import traceback
+            traceback.print_exc() # Add traceback for better error debugging
             return jsonify({"error": "An unexpected error occurred"}), 500
     
-    def submit_name(self):
-        """Store user's name in session"""
-        try:
-            user_name = request.json.get("name", "").strip()
-            if not user_name:
-                return jsonify({"error": "Name is required"}), 400
-
-            session["user_name"] = user_name
-            return jsonify({"message": "Name saved successfully!", "name": user_name})
-        except Exception as e:
-            print(f"Error storing name: {e}")
-            return jsonify({"error": "An error occurred while storing the name"}), 500
+    # Remove submit_name method
     
     def generate_uml(self):
         """Generate UML diagram from domain model description"""

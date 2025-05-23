@@ -2,30 +2,10 @@ from flask import request, jsonify, session
 from src.model.project_service import ProjectService
 
 class ProjectController:
-    """Controller for project management operations"""
+    """Controller for project management operations (simplified model)"""
     
     def __init__(self):
         self.project_service = ProjectService()
-        
-    def save_to_database(self):
-        """Save work results to the database"""
-        try:
-            data = request.json
-            project_name = data.get("project_name", "").strip()
-            file_name = data.get("file_name", "").strip()
-            username = data.get("username", "").strip()
-            domain_model_description = data.get("domain_model_description", "")
-            plant_uml = data.get("plant_uml", "")
-            chat_history = data.get("chat_history", [])
-            
-            result, status_code = self.project_service.save_to_database(
-                project_name, file_name, username, domain_model_description, plant_uml, chat_history
-            )
-            
-            return jsonify(result), status_code
-        except Exception as e:
-            print(f"Error in save_to_database: {e}")
-            return jsonify({"error": "An unexpected error occurred."}), 500
     
     def get_projects(self):
         """Get list of projects from database"""
@@ -37,38 +17,52 @@ class ProjectController:
             return jsonify({"error": "An unexpected error occurred."}), 500
     
     def create_project(self):
-        """Create a new project in the database"""
+        """Create a new project with auto-generated name"""
         try:
-            data = request.json
-            project_name = data.get("project_name", "").strip()
-            username = data.get("username", session.get("user_name", "Anonymous")).strip()
-            
-            result, status_code = self.project_service.create_project(project_name, username)
+            result, status_code = self.project_service.create_project()
             return jsonify(result), status_code
         except Exception as e:
             print(f"Error in create_project: {e}")
             return jsonify({"error": "An unexpected error occurred."}), 500
     
-    def create_file(self):
-        """Create a new file within a project"""
+    def rename_project(self):
+        """Rename an existing project"""
         try:
             data = request.json
-            project_name = data.get("project_name", "Untitled").strip()
-            file_name = data.get("file_name", "Untitled").strip()
+            old_project_name = data.get("old_project_name", "").strip()
+            new_project_name = data.get("new_project_name", "").strip()
             
-            result, status_code = self.project_service.create_file(project_name, file_name)
+            result, status_code = self.project_service.rename_project(old_project_name, new_project_name)
             return jsonify(result), status_code
         except Exception as e:
-            print(f"Error in create_file: {e}")
+            print(f"Error in rename_project: {e}")
             return jsonify({"error": "An unexpected error occurred."}), 500
     
-    def get_files(self):
-        """Get list of files for a project"""
+    def get_project_data(self):
+        """Get project data for the specified project"""
         try:
             project_name = request.args.get("project_name", "").strip()
             
-            result, status_code = self.project_service.get_files(project_name)
+            result, status_code = self.project_service.get_project_data(project_name)
             return jsonify(result), status_code
         except Exception as e:
-            print(f"Error in get_files: {e}")
+            print(f"Error in get_project_data: {e}")
+            return jsonify({"error": "An unexpected error occurred."}), 500
+    
+    def save_project_data(self):
+        """Save data for the specified project"""
+        try:
+            data = request.json
+            project_name = data.get("project_name", "").strip()
+            domain_model_description = data.get("domain_model_description")
+            plant_uml = data.get("plant_uml")
+            chat_history = data.get("chat_history")
+            
+            result, status_code = self.project_service.save_project_data(
+                project_name, domain_model_description, plant_uml, chat_history
+            )
+            
+            return jsonify(result), status_code
+        except Exception as e:
+            print(f"Error in save_project_data: {e}")
             return jsonify({"error": "An unexpected error occurred."}), 500

@@ -32,7 +32,6 @@ def reset_controllers():
     """Reset all controllers."""
     global chat_controller
     chat_controller = None
-    # Don't reset project_controller as it maintains DB connections
 
 # Routes
 @app.route("/")
@@ -48,12 +47,6 @@ def chat():
     controller = get_chat_controller()
     return controller.handle_chat_request()
 
-@app.route("/submit_name", methods=["POST"])
-def submit_name():
-    """Submit name endpoint."""
-    controller = get_chat_controller()
-    return controller.submit_name()
-
 @app.route("/generate_uml", methods=["POST"])
 def generate_uml():
     """Generate UML endpoint."""
@@ -66,13 +59,7 @@ def get_domain_model_descriptions():
     controller = get_chat_controller()
     return controller.get_current_domain_model_description()
 
-# Project routes
-@app.route("/save_to_database", methods=["POST"])
-def save_to_database():
-    """Save to database endpoint."""
-    controller = get_project_controller()
-    return controller.save_to_database()
-
+# Project routes (simplified to remove file management)
 @app.route("/get_projects", methods=["GET"])
 def get_projects():
     """Get projects endpoint."""
@@ -85,17 +72,23 @@ def create_project():
     controller = get_project_controller()
     return controller.create_project()
 
-@app.route("/create_file", methods=["POST"])
-def create_file():
-    """Create file endpoint."""
+@app.route("/rename_project", methods=["POST"])
+def rename_project():
+    """Rename project endpoint."""
     controller = get_project_controller()
-    return controller.create_file()
+    return controller.rename_project()
 
-@app.route("/get_files", methods=["GET"])
-def get_files():
-    """Get files endpoint."""
+@app.route("/get_project_data", methods=["GET"])
+def get_project_data():
+    """Get project data endpoint."""
     controller = get_project_controller()
-    return controller.get_files()
+    return controller.get_project_data()
+
+@app.route("/save_project_data", methods=["POST"])
+def save_project_data():
+    """Save project data endpoint."""
+    controller = get_project_controller()
+    return controller.save_project_data()
 
 # Run the application
 if __name__ == "__main__":
