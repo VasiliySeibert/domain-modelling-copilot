@@ -11,6 +11,8 @@ class ProjectView {
         };
         
         this.selectedProject = null;
+        this.umlView = null;
+        this.chatView = null;
 
         // Add event listener for modal opening
         document.getElementById('projectModal').addEventListener('show.bs.modal', () => {
@@ -25,6 +27,15 @@ class ProjectView {
                 }
             });
         });
+    }
+    
+    // Add these methods to set the view instances
+    setUmlView(umlView) {
+        this.umlView = umlView;
+    }
+    
+    setChatView(chatView) {
+        this.chatView = chatView;
     }
     
     bindCreateProject() {
@@ -195,17 +206,14 @@ class ProjectView {
         });
     }
     
+    // Update the loadProjectData method to use the shared UMLView instance
     loadProjectData(projectName) {
         // Show loading indicator
         const loadingIndicator = document.createElement('div');
-        loadingIndicator.className = 'project-loading';
+        loadingIndicator.className = 'project-switching-indicator';
         loadingIndicator.innerHTML = `
-            <div class="d-flex flex-column align-items-center">
-                <div class="spinner-border text-primary mb-2" role="status">
-                    <span class="visually-hidden">Loading project data...</span>
-                </div>
-                <div>Loading project data...</div>
-            </div>
+            <div class="spinner"></div>
+            <div>Loading project "${projectName}"...</div>
         `;
         document.body.appendChild(loadingIndicator);
         
@@ -226,41 +234,30 @@ class ProjectView {
                         document.dispatchEvent(new CustomEvent('domainModelUpdated'));
                     }
                     
-                    // Update PlantUML if available
-                    if (projectData.plant_uml) {
-                        document.getElementById("plantumlText").textContent = projectData.plant_uml;
-                        
-                        // Render the PlantUML diagram
-                        const umlView = new UMLView();
-                        umlView.renderPlantUMLDiagram(projectData.plant_uml);
-                        
-                        // Dispatch event that UML was updated
-                        document.dispatchEvent(new CustomEvent('umlUpdated'));
+                    // Update PlantUML if available - use the shared UMLView instance
+                    if (projectData.plant_uml && this.umlView) {
+                        this.umlView.setPlantUML(projectData.plant_uml);
                     }
                     
                     // Update chat history if available
-                    if (projectData.chat_history && projectData.chat_history.length > 0) {
+                    if (projectData.chat_history && projectData.chat_history.length > 0 && this.chatView) {
                         const chatBox = document.getElementById("chatBox");
                         chatBox.innerHTML = ""; // Clear existing messages
                         
                         // Add each message to the chat box
                         projectData.chat_history.forEach(msg => {
-                            const messageDiv = document.createElement("div");
-                            messageDiv.classList.add("chat-message");
-                            
                             if (msg.role === "user") {
-                                messageDiv.classList.add("user-message");
-                                messageDiv.textContent = msg.content;
+                                this.chatView.display_input(msg.content);
                             } else {
-                                messageDiv.classList.add("bot-message");
-                                messageDiv.innerHTML = marked.parse(msg.content);
+                                this.chatView.displayBotMessage(msg.content);
                             }
-                            
-                            chatBox.appendChild(messageDiv);
                         });
-                        
-                        // Auto-scroll to the bottom of chat
-                        chatBox.scrollTop = chatBox.scrollHeight;
+                    }
+                    
+                    // Update project name display
+                    const currentProjectDisplay = document.getElementById('currentProjectDisplay');
+                    if (currentProjectDisplay) {
+                        currentProjectDisplay.textContent = projectName;
                     }
                     
                     // Show success notification

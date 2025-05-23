@@ -84,14 +84,18 @@ RESPONSE GUIDELINES:
   "Glad you like it! Let me know if you want to add more entities or relationships."
   "Thanks! I'm here if you need to make any changes to the model."
 
-- For DOMAIN MODEL UPDATES: Confirm the update with specific details:
-  "Perfect! I've added **Truck** as a new entity to the domain model."
-  "Great addition! I've updated the model to include the **Payment** relationship you mentioned."
-
+- For DOMAIN MODEL UPDATES: Acknowledge changes and provide extension suggestions:
+  "Perfect! I've added the new entities and relationships to the model. You might also want to consider: 
+  You might also want to consider:
+   - Adding attributes like **capacity** and **licensePlate** to the Truck entity
+   - Creating a relationship between **Truck** and **DeliveryRoute** entities
+   - Specifying if certain **Products** can only be transported by specific truck types
+   
 - For INITIAL REQUESTS: Neutral response with helpful suggestions.
 
-IMPORTANT: Format all entity and relationship names with **bold** in your response.
+IMPORTANT: Response should be in bullet points(3 max).
 """
+          # IMPORTANT: Format all entity names with **bold** in your response and not more than 2-3 sentences and response should be in bullet points(3 max).
             
             messages = [
                 {"role": "system", "content": [{"type": "text", "text": system_prompt}]},

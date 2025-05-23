@@ -824,3 +824,25 @@ h1, h2, h3, h4, h5, h6, .section-title {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Animation for content fading in */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Apply to content sections that need the fade-in effect */
+.fade-in-content {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+/* UML loading indicator styling */
+#umlLoadingIndicator {
+    text-align: center;
+    padding: 20px;
+}
+
+/* Transition effects for content */
+#domainModelText, #plantumlText, #umlImage {
+    transition: opacity 0.4s ease-in-out;
+}

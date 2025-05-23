@@ -92,15 +92,20 @@ class ProjectService:
             if not project_name:
                 return {"error": "Project name is required."}, 400
                 
+            # Check if MongoDB connection is available
+            if self.projects_collection is None:
+                return {"error": "Database connection is not available."}, 500
+                
             # Get the project data
             project = self.projects_collection.find_one(
                 {"project_name": project_name}, 
                 {"_id": 0, "domain_model_description": 1, "plant_uml": 1, "chat_history": 1}
             )
-                
+            
             if not project:
                 return {"error": f"Project '{project_name}' not found."}, 404
                 
+            print(f"Project data retrieved successfully for '{project_name}'")
             return {"project_data": project}, 200
         except Exception as e:
             print(f"Error retrieving project data: {e}")

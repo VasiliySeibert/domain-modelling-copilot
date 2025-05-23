@@ -7,6 +7,9 @@ class DomainModellingApp {
             umlView: new UMLView()
         };
         
+        // Make the app instance globally accessible for the project view
+        window.appInstance = this;
+        
         // Add a timer for delayed auto-saving
         this.saveTimeout = null;
         // Flag to track if any interaction has occurred
@@ -17,6 +20,10 @@ class DomainModellingApp {
         // Set up event listeners and initialize components
         this.setupEventListeners();
         this.views.umlView.displayDefaultPlantUML();
+        
+        // Pass the UMLView instance to the project view
+        this.views.projectView.setUmlView(this.views.umlView);
+        this.views.projectView.setChatView(this.views.chatView);
         
         // Auto select or create a project on startup
         this.autoSelectProject();

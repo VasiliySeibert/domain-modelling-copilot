@@ -1,12 +1,13 @@
 class UMLView {
     constructor() {
         this.elements = {
-            // Make sure we're properly selecting the domain model text element
             domainModelText: document.getElementById('domainModelText'),
             domainModelLoading: document.getElementById('domainModelLoading'),
             plantumlText: document.getElementById('plantumlText'),
             plantumlLoading: document.getElementById('plantumlLoading'),
-            generateUMLBtn: document.getElementById('generateUMLBtn')
+            generateUMLBtn: document.getElementById('generateUMLBtn'),
+            // Add the new loading indicator element
+            umlLoadingIndicator: document.getElementById('umlLoadingIndicator')
         };
 
         // Add validation to ensure all elements were found
@@ -25,16 +26,30 @@ class UMLView {
         }
     }
 
-    // Update the setDomainModelDescription method to check for the element's existence
+    // Update the setDomainModelDescription method to show the loading indicator
     setDomainModelDescription(domainModelDescription) {
         if (!this.elements.domainModelText) {
             console.error("domainModelText element not found in the DOM");
             return; // Exit the function early if the element doesn't exist
         }
         
+        // Apply fade-in animation to domain model text
+        this.elements.domainModelText.style.opacity = "0";
         this.elements.domainModelText.textContent = domainModelDescription || "No detailed description provided.";
         
+        // Trigger reflow to restart animation
+        void this.elements.domainModelText.offsetWidth;
+        
+        // Apply fade-in
+        this.elements.domainModelText.style.opacity = "1";
+        this.elements.domainModelText.style.transition = "opacity 0.4s ease-in-out";
+        
         if (domainModelDescription && domainModelDescription.trim()) {
+            // Show loading indicator when starting to generate UML
+            if (this.elements.umlLoadingIndicator) {
+                this.elements.umlLoadingIndicator.classList.remove('d-none');
+            }
+            
             this.generateUMLFromDomainModelDescription(domainModelDescription);
         }
         
@@ -149,13 +164,23 @@ package "Business Domain" {
         });
     }
     
+    // Update the setPlantUML method to apply fade-in animation to PlantUML text
     setPlantUML(plantUML) {
         if (!this.elements.plantumlText) {
             console.error("plantumlText element not found in the DOM");
             return;
         }
         
+        // Apply fade-in animation to PlantUML text
+        this.elements.plantumlText.style.opacity = "0";
         this.elements.plantumlText.textContent = plantUML;
+        
+        // Trigger reflow to restart animation
+        void this.elements.plantumlText.offsetWidth;
+        
+        // Apply fade-in
+        this.elements.plantumlText.style.opacity = "1";
+        this.elements.plantumlText.style.transition = "opacity 0.4s ease-in-out";
         
         // Render the PlantUML diagram
         this.renderPlantUMLDiagram(plantUML);
@@ -176,14 +201,20 @@ package "Business Domain" {
         return this.elements.domainModelText.textContent.trim();
     }
 
-    // Replace the current renderPlantUMLDiagram method with this improved version
+    // Update the renderPlantUMLDiagram method to handle the loading indicator
     renderPlantUMLDiagram(plantUML) {
         if (!plantUML || !plantUML.trim()) {
             // No PlantUML code to render
+            this.hideLoadingIndicator();
             return;
         }
         
         try {
+            // Make sure loading indicator is visible (in case it's called directly)
+            if (this.elements.umlLoadingIndicator) {
+                this.elements.umlLoadingIndicator.classList.remove('d-none');
+            }
+            
             // Use the plantumlEncoder library instead of custom encoding
             const encodedUML = plantumlEncoder.encode(plantUML);
             // Use SVG format for better quality
@@ -198,12 +229,27 @@ package "Business Domain" {
             if (umlImage && umlPlaceholder) {
                 // Set the image source
                 umlImage.src = imageUrl;
-                umlImage.classList.remove('d-none');
-                umlPlaceholder.classList.add('d-none');
                 
                 // Add loading and error handlers
                 umlImage.onload = () => {
                     console.log("PlantUML diagram loaded successfully");
+                    
+                    // Hide placeholder
+                    umlPlaceholder.classList.add('d-none');
+                    
+                    // Apply fade-in animation to image
+                    umlImage.style.opacity = "0";
+                    umlImage.classList.remove('d-none');
+                    
+                    // Trigger reflow to restart animation
+                    void umlImage.offsetWidth;
+                    
+                    // Apply fade-in
+                    umlImage.style.opacity = "1";
+                    umlImage.style.transition = "opacity 0.4s ease-in-out";
+                    
+                    // Hide loading indicator
+                    this.hideLoadingIndicator();
                 };
                 
                 umlImage.onerror = () => {
@@ -214,10 +260,21 @@ package "Business Domain" {
                         <i class="bi bi-exclamation-triangle fs-1 opacity-50 text-warning"></i>
                         <p class="mt-2">Error rendering diagram. Please check your PlantUML syntax.</p>
                     `;
+                    this.hideLoadingIndicator();
                 };
+            } else {
+                this.hideLoadingIndicator();
             }
         } catch (error) {
             console.error("Error rendering PlantUML diagram:", error);
+            this.hideLoadingIndicator();
+        }
+    }
+
+    // Add a helper method to hide the loading indicator
+    hideLoadingIndicator() {
+        if (this.elements.umlLoadingIndicator) {
+            this.elements.umlLoadingIndicator.classList.add('d-none');
         }
     }
 }
