@@ -90,6 +90,12 @@ def save_project_data():
     controller = get_project_controller()
     return controller.save_project_data()
 
+@app.route("/undo_project_change", methods=["POST"])
+def undo_project_change():
+    """Undo project change endpoint."""
+    controller = get_project_controller()
+    return controller.undo_project_change()
+
 # Run the application
 if __name__ == "__main__":
     app.run(debug=True)
