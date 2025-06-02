@@ -26,16 +26,32 @@ class UMLView {
         }
     }
 
-    // Update the setDomainModelDescription method to show the loading indicator
-    setDomainModelDescription(domainModelDescription) {
+    // Update the setDomainModelDescription method to preserve initial welcome text
+    setDomainModelDescription(domainModelDescription, generateUml = true) {
         if (!this.elements.domainModelText) {
             console.error("domainModelText element not found in the DOM");
             return; // Exit the function early if the element doesn't exist
         }
         
+        const currentText = this.elements.domainModelText.textContent;
+        const isInitialText = currentText.includes("Welcome to your new project!");
+        
+        // Don't update if domain model description is empty/undefined and we have the initial welcome text
+        if ((domainModelDescription === undefined || domainModelDescription === '') && isInitialText) {
+            console.log("Preserving initial welcome text");
+            return;
+        }
+        
         // Apply fade-in animation to domain model text
         this.elements.domainModelText.style.opacity = "0";
-        this.elements.domainModelText.textContent = domainModelDescription || "No detailed description provided.";
+        
+        // Only replace text if we have a meaningful domain model description
+        if (domainModelDescription && domainModelDescription.trim()) {
+            this.elements.domainModelText.textContent = domainModelDescription;
+        } else if (!isInitialText) {
+            // Only change to "No detailed description" if it's not already the welcome text
+            this.elements.domainModelText.textContent = "No detailed description provided.";
+        }
         
         // Trigger reflow to restart animation
         void this.elements.domainModelText.offsetWidth;
@@ -44,7 +60,7 @@ class UMLView {
         this.elements.domainModelText.style.opacity = "1";
         this.elements.domainModelText.style.transition = "opacity 0.4s ease-in-out";
         
-        if (domainModelDescription && domainModelDescription.trim()) {
+        if (generateUml && domainModelDescription && domainModelDescription.trim()) {
             // Show loading indicator when starting to generate UML
             if (this.elements.umlLoadingIndicator) {
                 this.elements.umlLoadingIndicator.classList.remove('d-none');
@@ -206,6 +222,15 @@ package "Business Domain" {
         if (!plantUML || !plantUML.trim()) {
             // No PlantUML code to render
             this.hideLoadingIndicator();
+            
+            // Clear the image and show placeholder when there's no PlantUML
+            const umlImage = document.getElementById('umlImage');
+            const umlPlaceholder = document.getElementById('umlPlaceholder');
+            
+            if (umlImage && umlPlaceholder) {
+                umlImage.classList.add('d-none');
+                umlPlaceholder.classList.remove('d-none');
+            }
             return;
         }
         
