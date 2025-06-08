@@ -12,6 +12,9 @@ class DomainModellingApp {
         
         // Only keep the loading state flag
         this.isLoadingState = false;
+
+        // Add flag to track if undo is available
+        this.undoAvailable = false;
     }
 
     initialize() {
@@ -84,13 +87,12 @@ class DomainModellingApp {
             return;
         }
 
-        if (!confirm(`Are you sure you want to undo the last version of project "${selectedProject}"?`)) {
+        if (!confirm(`Are you sure you want to undo the last change to your domain model?`)) {
             return;
         }
 
         const undoButton = document.getElementById('undoChangeBtn');
-        const originalButtonText = undoButton.innerHTML;
-        undoButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Undoing...';
+        undoButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
         undoButton.disabled = true;
 
         fetch("/undo_project_change", {
@@ -101,12 +103,15 @@ class DomainModellingApp {
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                alert(`Error undoing version: ${data.error}`);
+                alert(`Error undoing change: ${data.error}`);
+                // Re-enable the button if there was an error
+                this.enableUndoButton();
             } else if (data.project_data) {
-                alert(data.message || "Project successfully reverted to previous version.");
+                // Success message as toast or small notification instead of alert
+                console.log("Project reverted to previous version");
                 
                 this.isLoadingState = true;
-                console.log('handleUndoChange: isLoadingState = true before loadProjectData');
+                this.undoAvailable = false; // Mark that undo is no longer available
 
                 this.views.projectView.loadProjectData(selectedProject, data.project_data)
                     .catch(loadErr => {
@@ -114,18 +119,26 @@ class DomainModellingApp {
                     })
                     .finally(() => {
                         this.isLoadingState = false;
-                        console.log('handleUndoChange: isLoadingState reset after loadProjectData completed');
+                        // Button stays disabled after successful undo
+                        undoButton.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
                     });
             }
         })
         .catch(err => {
-            alert("An unexpected error occurred while undoing version.");
+            alert("An unexpected error occurred while undoing change.");
             console.error("Undo error:", err);
-        })
-        .finally(() => {
-            undoButton.innerHTML = originalButtonText;
-            undoButton.disabled = false;
+            this.enableUndoButton();
         });
+    }
+    
+    // Add helper method to enable the undo button
+    enableUndoButton() {
+        const undoButton = document.getElementById('undoChangeBtn');
+        if (undoButton) {
+            undoButton.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+            undoButton.disabled = false;
+            this.undoAvailable = true;
+        }
     }
     
     handleSendMessage(message) {
@@ -190,6 +203,11 @@ class DomainModellingApp {
                 if (data.plant_uml && data.plant_uml.trim()) {
                     this.views.umlView.setPlantUML(data.plant_uml);
                 }
+            }
+
+            // Enable undo button when we get a response that changes the domain model
+            if (data.domain_model_description || data.plant_uml) {
+                this.enableUndoButton();
             }
         })
         .catch((err) => {
