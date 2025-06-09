@@ -189,7 +189,7 @@ class ProjectView {
     // Update the loadProjectData method to use the shared UMLView instance
     // Allow passing projectData directly to avoid a fetch if data is already available (e.g., after undo)
     // Ensure it returns a Promise
-    loadProjectData(projectName, directData = null) {
+    loadProjectData(projectName, projectData = null) {
         const displayData = (projectData) => {
             // Update domain model description if available
             if (projectData.domain_model_description !== undefined) { // Check for undefined to allow empty string
@@ -244,9 +244,9 @@ class ProjectView {
             }, 3000);
         };
 
-        if (directData) {
+        if (projectData) {
             try {
-                displayData(directData);
+                displayData(projectData);
                 const loadingIndicator = document.querySelector('.project-switching-indicator');
                 if (loadingIndicator && document.body.contains(loadingIndicator)) {
                     document.body.removeChild(loadingIndicator);
@@ -267,24 +267,32 @@ class ProjectView {
         `;
         document.body.appendChild(loadingIndicator);
         
-        return fetch(`/get_project_data?project_name=${encodeURIComponent(projectName)}`)
-            .then((response) => {
-                if (!response.ok) {
-                    // Attempt to parse error from JSON response, otherwise use status text
-                    return response.json().then(errData => {
-                        throw new Error(errData.error || response.statusText);
-                    }).catch(() => {
-                        throw new Error(response.statusText);
-                    });
-                }
-                return response.json();
-            })
+        const endpoint = `/get_project_data?project_name=${encodeURIComponent(projectName)}`;
+        const options = {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        };
+        
+        return fetch(endpoint, options)
+            .then((response) => response.json())
             .then((data) => {
                 if (data.error) {
                     alert(data.error);
                     throw new Error(data.error); // Make sure to throw to propagate to catch/finally
                 } else if (data.project_data) {
                     displayData(data.project_data);
+                }
+                
+                // Set undo button state based on whether there are versions to undo
+                const undoButton = document.getElementById('undoChangeBtn');
+                if (undoButton) {
+                    const hasVersions = data.project_data?.versions?.length > 1;
+                    undoButton.disabled = !hasVersions;
+                    
+                    // Also update the flag in app controller if accessible
+                    if (window.appController) {
+                        window.appController.undoAvailable = hasVersions;
+                    }
                 }
             })
             // Catch is handled by the caller if needed
