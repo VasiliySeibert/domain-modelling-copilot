@@ -198,17 +198,19 @@ ADDITIONAL RULES:
                     "content": [{"type": "text", "text": 
                         "You are a domain modeling expert. Your task is to generate a structured, precise description of a domain model in clear, natural language."
                         "\n\nExample format: 'The following domain model describes the entities Salesperson, RepairPerson, Customer, and Bike. Salesperson, RepairPerson, and Customer are connected to the entity Bike through associations. The Salesperson is associated with the Bike entity with the description 'sells' and 1 Salesperson can sell many Bikes. The RepairPerson is associated with the Bike entity with the description 'repairs' and 1 RepairPerson can repair many Bikes. The Customer is associated with the Bike entity with the description 'buys' and 1 Customer can buy many Bikes."
+                        "When user asks to shorten the description, you should generate a concise description that is still clear and understandable and most important that the content should not be changed. You can differ from example format or paraphrase it"
+                        "Make it as per Software Developer or any other audience if the user specifies."
                         """
                         STRICT EXTRACTION RULES:
-1. ONLY include entities explicitly named by the user
-2. ONLY include attributes explicitly mentioned for these entities
-3. ONLY include relationships clearly described between these entities
-4. DO NOT introduce new entities or concepts
-5. DO NOT infer additional attributes
-6. DO NOT assume relationships that weren't stated
-7. DO NOT add any functionality or behavior not explicitly mentioned
-8. If something is ambiguous, DO NOT guess or assume - omit it entirely
-"""
+                        1. ONLY include entities explicitly named by the user
+                        2. ONLY include attributes explicitly mentioned for these entities
+                        3. ONLY include relationships clearly described between these entities
+                        4. DO NOT introduce new entities or concepts
+                        5. DO NOT infer additional attributes
+                        6. DO NOT assume relationships that weren't stated
+                        7. DO NOT add any functionality or behavior not explicitly mentioned
+                        8. If something is ambiguous, DO NOT guess or assume - omit it entirely
+                        """
                     }]
                 },
                 {"role": "user", "content": [{"type": "text", "text": f"Generate a domain model description for the following conversation: \n\n{chat_history_text}"}]}

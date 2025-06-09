@@ -37,7 +37,6 @@ class DomainModellingApp {
             .then((data) => {
                 if (data.project_name) {
                     this.views.projectView.selectedProject = data.project_name;
-                    console.log(`Created and selected new project: ${data.project_name}`);
                     
                     const selectProjectBtn = document.getElementById('selectProjectBtn');
                     if (selectProjectBtn) {
@@ -45,7 +44,6 @@ class DomainModellingApp {
                     }
 
                     this.isLoadingState = true;
-                    console.log('autoSelectProject: isLoadingState = true');
                     
                     this.views.projectView.loadProjectData(data.project_name)
                         .catch(err => {
@@ -54,7 +52,6 @@ class DomainModellingApp {
                         })
                         .finally(() => {
                             this.isLoadingState = false;
-                            console.log('autoSelectProject: isLoadingState reset after loadProjectData completion');
                         });
                 }
             })
