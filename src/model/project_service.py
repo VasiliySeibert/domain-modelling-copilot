@@ -3,7 +3,7 @@ from pymongo import MongoClient
 from datetime import datetime
 
 class ProjectService:
-    """Service for project database operations with simplified structure."""
+    """Service for project database operations with embedded version history."""
     
     def __init__(self):
         """Initialize connection to MongoDB."""
@@ -11,7 +11,6 @@ class ProjectService:
             mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/")
             print(f"Connecting to MongoDB at: {mongo_uri}")
             self.client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
-            # Test connection
             self.client.server_info()
             print("MongoDB connection successful")
             self.db = self.client.get_database("domain_modelling_copilot")
@@ -33,31 +32,41 @@ class ProjectService:
             return {"error": "Failed to retrieve projects."}, 500
     
     def create_project(self):
-        """Create a new project with auto-generated name."""
+        """Create a new project with an initial version."""
         try:
-            # Get the count of existing projects to generate the next project number
+            if self.projects_collection is None:
+                return {"error": "Database connection not available."}, 500
+
             project_count = self.projects_collection.count_documents({})
             project_name = f"Project {project_count + 1}"
             
-            # Check if this name already exists (unlikely but possible if projects were deleted)
             while self.projects_collection.find_one({"project_name": project_name}):
                 project_count += 1
                 project_name = f"Project {project_count + 1}"
                 
-            # Create new project with simplified structure (no files array)
-            project = {
+            # Initial version data
+            initial_dmd = "Welcome to your new project! Start by describing your domain."
+            initial_plant_uml = "@startuml\nskinparam monochrome true\ntitle Your New Project\n\nclass ExampleEntity {\n  +id: string\n  +name: string\n}\n\nnote \"Start building your domain model!\" as N1\n@enduml"
+            initial_assistant = "Welcome to your new project! How can I help you model your domain?"
+
+            # Create project with embedded initial version
+            project_doc = {
                 "project_name": project_name,
                 "created_at": datetime.now(),
-                "domain_model_description": None,
-                "plant_uml": None,
-                "chat_history": []
+                "versions": [
+                    {
+                        "version": 1,
+                        "user_input": None,  # No user input for initial version
+                        "assistant": initial_assistant,
+                        "domain_model_description": initial_dmd,
+                        "plant_uml": initial_plant_uml,
+                        "timestamp": datetime.now()
+                    }
+                ]
             }
-                
-            result = self.projects_collection.insert_one(project)
-            if result.inserted_id:
-                return {"message": f"Project '{project_name}' created successfully.", "project_name": project_name}, 201
-            else:
-                return {"error": "Failed to create project."}, 500
+            
+            self.projects_collection.insert_one(project_doc)
+            return {"message": f"Project '{project_name}' created successfully.", "project_name": project_name}, 201
         except Exception as e:
             print(f"Error creating project: {e}")
             return {"error": f"Failed to create project: {str(e)}"}, 500
@@ -87,58 +96,136 @@ class ProjectService:
             return {"error": f"Failed to rename project: {str(e)}"}, 500
     
     def get_project_data(self, project_name):
-        """Get all data for a specific project."""
+        """Get the latest project state and reconstructed chat history."""
         try:
             if not project_name:
                 return {"error": "Project name is required."}, 400
-                
-            # Check if MongoDB connection is available
             if self.projects_collection is None:
                 return {"error": "Database connection is not available."}, 500
                 
-            # Get the project data
-            project = self.projects_collection.find_one(
-                {"project_name": project_name}, 
-                {"_id": 0, "domain_model_description": 1, "plant_uml": 1, "chat_history": 1}
-            )
-            
-            if not project:
+            project_doc = self.projects_collection.find_one({"project_name": project_name})
+            if not project_doc:
                 return {"error": f"Project '{project_name}' not found."}, 404
-                
+            
+            versions = project_doc.get("versions", [])
+            if not versions:
+                return {"error": f"No version data found for project '{project_name}'."}, 404
+
+            # The latest version represents the current state
+            latest_version = versions[-1]
+            
+            current_domain_model = latest_version.get("domain_model_description")
+            current_plant_uml = latest_version.get("plant_uml")
+            
+            # Reconstruct chat history from all versions
+            chat_history = []
+            for version in versions:
+                if version.get("user_input"):
+                    chat_history.append({"role": "user", "content": version["user_input"]})
+                if version.get("assistant"):
+                    chat_history.append({"role": "assistant", "content": version["assistant"]})
+            
+            project_data = {
+                "domain_model_description": current_domain_model,
+                "plant_uml": current_plant_uml,
+                "chat_history": chat_history
+            }
+            
             print(f"Project data retrieved successfully for '{project_name}'")
-            return {"project_data": project}, 200
+            return {"project_data": project_data}, 200
         except Exception as e:
             print(f"Error retrieving project data: {e}")
             return {"error": f"Failed to retrieve project data: {str(e)}"}, 500
     
-    def save_project_data(self, project_name, domain_model_description=None, plant_uml=None, chat_history=None):
-        """Save project data directly to the project document."""
+    def save_version(self, project_name, user_input, assistant, domain_model_description, plant_uml):
+        """Add a new version to the project's versions array."""
         try:
             if not project_name:
                 return {"error": "Project name is required."}, 400
+            if self.projects_collection is None:
+                return {"error": "Database connection not available."}, 500
+
+            # Find the project
+            project_doc = self.projects_collection.find_one({"project_name": project_name})
+            if not project_doc:
+                return {"error": f"Project '{project_name}' not found."}, 404
+            
+            # Get versions array or initialize if not exists
+            versions = project_doc.get("versions", [])
+            
+            # If there are existing versions, use their values as fallbacks
+            if versions:
+                latest_version = versions[-1]
+                # Ensure we're not saving null values by using the previous version as fallback
+                if domain_model_description is None:
+                    domain_model_description = latest_version.get("domain_model_description", "Welcome to your new project! Start by describing your domain.")
                 
-            # Build update document with only the fields that are provided
-            update_doc = {}
-            if domain_model_description is not None:
-                update_doc["domain_model_description"] = domain_model_description
-            if plant_uml is not None:
-                update_doc["plant_uml"] = plant_uml
-            if chat_history is not None:
-                update_doc["chat_history"] = chat_history
+                if plant_uml is None:
+                    plant_uml = latest_version.get("plant_uml", "@startuml\nskinparam monochrome true\ntitle Your New Project\n\nclass ExampleEntity {\n  +id: string\n  +name: string\n}\n\nnote \"Start building your domain model!\" as N1\n@enduml")
+            else:
+                # Initialize with defaults if this is somehow the first version
+                if domain_model_description is None:
+                    domain_model_description = "Welcome to your new project! Start by describing your domain."
                 
-            if not update_doc:
-                return {"error": "No data provided to update."}, 400
-                
-            # Update the project
+                if plant_uml is None:
+                    plant_uml = "@startuml\nskinparam monochrome true\ntitle Your New Project\n\nclass ExampleEntity {\n  +id: string\n  +name: string\n}\n\nnote \"Start building your domain model!\" as N1\n@enduml"
+            
+            # Determine next version number
+            next_version = len(versions) + 1
+            
+            # Create new version object
+            new_version = {
+                "version": next_version,
+                "user_input": user_input,
+                "assistant": assistant,
+                "domain_model_description": domain_model_description,
+                "plant_uml": plant_uml,
+                "timestamp": datetime.now()
+            }
+            
+            # Add the new version to the versions array
             result = self.projects_collection.update_one(
                 {"project_name": project_name},
-                {"$set": update_doc}
+                {"$push": {"versions": new_version}}
             )
-                
+            
             if result.modified_count > 0:
-                return {"message": f"Project '{project_name}' updated successfully."}, 200
+                return {"message": f"Version {next_version} for project '{project_name}' saved successfully.", "version": next_version}, 200
             else:
-                return {"error": f"Project '{project_name}' not found or no changes made."}, 404
+                return {"error": "Failed to save version."}, 500
         except Exception as e:
-            print(f"Error saving project data: {e}")
-            return {"error": f"Failed to save project data: {str(e)}"}, 500
+            print(f"Error saving project version: {e}")
+            return {"error": f"Failed to save project version: {str(e)}"}, 500
+
+    def undo_version(self, project_name):
+        """Remove the latest version from the project's versions array."""
+        try:
+            if not project_name:
+                return {"error": "Project name is required."}, 400
+            if self.projects_collection is None:
+                return {"error": "Database connection not available."}, 500
+
+            # Find the project
+            project_doc = self.projects_collection.find_one({"project_name": project_name})
+            if not project_doc:
+                return {"error": f"Project '{project_name}' not found."}, 404
+            
+            versions = project_doc.get("versions", [])
+            if len(versions) <= 1:
+                return {"error": "Cannot undo the initial project version."}, 400
+            
+            # Remove the last element from the versions array using $pop operation
+            result = self.projects_collection.update_one(
+                {"project_name": project_name},
+                {"$pop": {"versions": 1}}  # 1 to remove the last element
+            )
+            
+            if result.modified_count == 0:
+                return {"error": "Failed to undo version."}, 500
+
+            # After removing, get the project data with the previous version
+            return self.get_project_data(project_name)
+            
+        except Exception as e:
+            print(f"Error undoing version: {e}")
+            return {"error": f"Failed to undo version: {str(e)}"}, 500
