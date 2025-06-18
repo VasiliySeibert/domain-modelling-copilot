@@ -217,7 +217,7 @@ def process_response(response):
 
 def convert_to_plantuml(data, response):
     try:
-        uml_lines = ["@startuml\n"]
+        uml_lines = ["@startuml", "left to right direction"]
 
         # Process Associations (Relationships)
         for assoc in data.get("associations", []):
@@ -261,7 +261,7 @@ def convert_to_plantuml(data, response):
         for entity, attributes in attribute_dict.items():
             uml_lines.append("\n".join(f"{entity} : {attr}" for attr in attributes))
 
-        uml_lines.append("\n@enduml")
+        uml_lines.append("@enduml")
 
         return "\n".join(uml_lines)
     except Exception as e:
@@ -339,7 +339,12 @@ def post_process(text):
     relationship_ops = ["--", "<|--", "o--", "*--"]
     
     for line in lines:
-        if line.strip() == "" or line.strip().startswith("@startuml") or line.strip().startswith("@enduml"):
+        if (
+            line.strip() == "" 
+            or line.strip().startswith("@startuml") 
+            or line.strip().startswith("@enduml")
+            or line.strip() == "left to right direction"
+        ):
             processed_lines.append(line)
             continue
         

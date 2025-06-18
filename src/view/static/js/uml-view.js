@@ -244,9 +244,7 @@ package "Business Domain" {
             const encodedUML = plantumlEncoder.encode(plantUML);
             // Use SVG format for better quality
             const imageUrl = `https://www.plantuml.com/plantuml/svg/${encodedUML}`;
-            
-            console.log("Rendering PlantUML diagram with URL:", imageUrl);
-            
+                        
             // Find elements
             const umlImage = document.getElementById('umlImage');
             const umlPlaceholder = document.getElementById('umlPlaceholder');
@@ -256,9 +254,7 @@ package "Business Domain" {
                 umlImage.src = imageUrl;
                 
                 // Add loading and error handlers
-                umlImage.onload = () => {
-                    console.log("PlantUML diagram loaded successfully");
-                    
+                umlImage.onload = () => {                  
                     // Hide placeholder
                     umlPlaceholder.classList.add('d-none');
                     
