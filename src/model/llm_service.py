@@ -16,7 +16,7 @@ class LLMService:
     def determine_input_type(self, chat_history_text):
         """
         Determine if the input has enough information for domain model description or if it's an update to an existing one.
-        Also detects irrelevant/casual messages that don't require domain model changes.
+        Also detects style change requests and irrelevant/casual messages.
         """
         
         try:
@@ -26,7 +26,7 @@ class LLMService:
                     "description": "Returns a decision about domain model generation and appropriate response",
                     "parameters": {
                         "type": "object",
-                        "required": ["decision", "is_update", "is_casual_comment", "suggestions"],
+                        "required": ["decision", "is_update", "is_casual_comment", "is_style_change", "suggestions"],
                         "properties": {
                             "decision": {
                                 "type": "boolean",
@@ -39,6 +39,14 @@ class LLMService:
                             "is_casual_comment": {
                                 "type": "boolean",
                                 "description": "True if this is just a casual comment (like 'wow', 'nice') that doesn't require updating the domain model"
+                            },
+                            "is_style_change": {
+                                "type": "boolean",
+                                "description": "True if the user is requesting to change the style/formatting of the description without changing the domain content"
+                            },
+                            "style_type": {
+                                "type": "string",
+                                "description": "If is_style_change is true, specifies the requested style (e.g., 'shorter', 'technical', 'software_engineer')"
                             },
                             "suggestions": {
                                 "type": "array",
@@ -55,7 +63,7 @@ class LLMService:
 
             system_prompt = """You are an expert domain modeling engineer specialized in UML and domain-driven design.
 
-YOUR TASK: Analyze chat history to determine if a domain model can be generated, updated, or if the message is unrelated to domain modeling.
+YOUR TASK: Analyze chat history to determine if a domain model can be generated, updated, if the message is a style change request, or if it's unrelated to domain modeling.
 
 MESSAGE CLASSIFICATION:
 1. INITIAL DOMAIN MODEL REQUEST: When user first describes multiple entities (3+) and relationships (2+) in their domain.
@@ -65,14 +73,18 @@ MESSAGE CLASSIFICATION:
    - Example: "Now I also want to add suppliers who provide products to the store."
    - Look for phrases like "add", "also", "now include", "additionally"
 
-3. CASUAL COMMENT: Brief reactions that don't add domain information.
+3. STYLE CHANGE REQUEST: User wants to change how the description is written, not the content.
+   - Examples: "make the description shorter", "can you write it from a software engineer's perspective", "simplify the description"
+   - For these, identify the specific style requested (shorter, technical, software_engineer, etc.)
+
+4. CASUAL COMMENT: Brief reactions that don't add domain information.
    - Examples: "wow", "nice", "thank you", "looks good", "great", "awesome", "perfect"
    - IMPORTANT: If a domain model exists and user sends ONLY praise/acknowledgment, classify as CASUAL
 
-4. QUESTION/CLARIFICATION: User asks about the domain model without adding new information.
+5. QUESTION/CLARIFICATION: User asks about the domain model without adding new information.
    - Example: "What does this relationship mean?" or "Can you explain this part?"
 
-5. OFF-TOPIC: Message unrelated to domain modeling.
+6. OFF-TOPIC: Message unrelated to domain modeling.
    - Example: "What's the weather today?"
 
 HOW TO DETERMINE IF A DOMAIN MODEL EXISTS:
@@ -80,23 +92,21 @@ HOW TO DETERMINE IF A DOMAIN MODEL EXISTS:
 - Look for phrases like "Here's the domain model" or "I've updated the domain model"
 
 RESPONSE GUIDELINES:
+- For STYLE CHANGE REQUESTS: Acknowledge the style change request.
+  "I've reformatted the domain model description as requested."
+  "I've made the description more technical as requested."
+
 - For CASUAL COMMENTS: Acknowledge without regenerating model. Use varied responses like:
   "Glad you like it! Let me know if you want to add more entities or relationships."
   "Thanks! I'm here if you need to make any changes to the model."
 
-- For DOMAIN MODEL UPDATES: Acknowledge changes and provide extension suggestions:
-  "Perfect! I've added the new entities and relationships to the model. You might also want to consider: 
-  You might also want to consider:
-   - Adding attributes like **capacity** and **licensePlate** to the Truck entity
-   - Creating a relationship between **Truck** and **DeliveryRoute** entities
-   - Specifying if certain **Products** can only be transported by specific truck types
-   
+- For DOMAIN MODEL UPDATES: Acknowledge changes and provide extension suggestions.
+  
 - For INITIAL REQUESTS: Neutral response with helpful suggestions.
 
 IMPORTANT: Response should be in bullet points(3 max).
 """
-          # IMPORTANT: Format all entity names with **bold** in your response and not more than 2-3 sentences and response should be in bullet points(3 max).
-            
+        
             messages = [
                 {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
                 {"role": "user", "content": [{"type": "text", "text": chat_history_text}]}
@@ -115,8 +125,16 @@ IMPORTANT: Response should be in bullet points(3 max).
                 result = json.loads(function_call.arguments)
                 
                 # Ensure all required fields are present with sensible defaults
+                if "is_style_change" not in result:
+                    result["is_style_change"] = False
+                    
+                if "style_type" not in result and result.get("is_style_change", False):
+                    result["style_type"] = "general"
+                    
                 if "suggestions" not in result or not result["suggestions"]:
-                    if result.get("is_casual_comment", False):
+                    if result.get("is_style_change", False):
+                        result["suggestions"] = ["I've reformatted the domain model description as requested."]
+                    elif result.get("is_casual_comment", False):
                         result["suggestions"] = ["I'm glad you like it! Let me know if you want to make any changes to the domain model."]
                     elif result.get("is_update", False):
                         result["suggestions"] = ["I've updated the domain model with your changes."]
@@ -132,6 +150,7 @@ IMPORTANT: Response should be in bullet points(3 max).
                 "decision": False, 
                 "is_update": False,
                 "is_casual_comment": False,
+                "is_style_change": False,
                 "suggestions": ["I need more information about your domain to help you. Could you describe the main entities and how they relate to each other?"]
             }
                 
@@ -142,6 +161,7 @@ IMPORTANT: Response should be in bullet points(3 max).
                 "decision": False,
                 "is_update": False,
                 "is_casual_comment": False,
+                "is_style_change": False,
                 "suggestions": ["I encountered an issue while analyzing your input. Could you try describing your domain again with key entities and relationships?"]
             }
 
