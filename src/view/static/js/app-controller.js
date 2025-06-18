@@ -102,6 +102,11 @@ class DomainModellingApp {
         .then(data => {
             if (data.error) {
                 alert(`Error undoing version: ${data.error}`);
+                
+                // If we can't undo any further, disable the button
+                if (data.error.includes("Cannot undo the initial project version")) {
+                    undoButton.disabled = true;
+                }
             } else if (data.project_data) {
                 alert(data.message || "Project successfully reverted to previous version.");
                 
@@ -116,6 +121,18 @@ class DomainModellingApp {
                         this.isLoadingState = false;
                         console.log('handleUndoChange: isLoadingState reset after loadProjectData completed');
                     });
+                
+                // Get project versions to determine if there's only one left
+                fetch(`/get_project_data?project_name=${encodeURIComponent(selectedProject)}`)
+                    .then(response => response.json())
+                    .then(projectInfo => {
+                        // Check if we need to disable the undo button (only 1 version remains)
+                        const versions = projectInfo.project_data?.versions || [];
+                        if (versions.length <= 1) {
+                            undoButton.disabled = true;
+                        }
+                    })
+                    .catch(err => console.error("Error checking versions:", err));
             }
         })
         .catch(err => {
@@ -177,6 +194,9 @@ class DomainModellingApp {
                 }
                 
                 this.views.chatView.showActionButtons();
+                
+                // Enable undo button when we get a response that changes the domain model
+                this.enableUndoButton();
             } else {
                 // General response
                 this.views.chatView.displayBotMessage(data.response || "No response provided.");
@@ -184,11 +204,17 @@ class DomainModellingApp {
                 // Only update domain model if not empty or undefined
                 if (data.domain_model_description && data.domain_model_description.trim()) {
                     this.views.umlView.setDomainModelDescription(data.domain_model_description, false);
+                    
+                    // Enable undo button when domain model changes
+                    this.enableUndoButton();
                 }
                 
                 // Only update PlantUML if provided and not empty
                 if (data.plant_uml && data.plant_uml.trim()) {
                     this.views.umlView.setPlantUML(data.plant_uml);
+                    
+                    // Enable undo button when PlantUML changes
+                    this.enableUndoButton();
                 }
             }
         })
@@ -200,5 +226,13 @@ class DomainModellingApp {
         .finally(() => {
             this.views.chatView.enableInput();
         });
+    }
+    
+    // Add this method to the DomainModellingApp class
+    enableUndoButton() {
+        const undoButton = document.getElementById('undoChangeBtn');
+        if (undoButton) {
+            undoButton.disabled = false;
+        }
     }
 }
