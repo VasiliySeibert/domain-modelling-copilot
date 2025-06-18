@@ -1,4 +1,4 @@
-from openai import AzureOpenAI
+from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
@@ -9,10 +9,8 @@ class OpenAIClient:
     def initialize(cls):
         """Initialize the OpenAI client."""
         load_dotenv(override=True)
-        cls._client = AzureOpenAI(
-            api_version=os.getenv("GPT_API_VERSION"),
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            azure_endpoint=os.getenv("ENDPOINT"),
+        cls._client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
         )
 
     @classmethod
