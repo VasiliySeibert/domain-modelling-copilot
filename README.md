@@ -34,7 +34,7 @@ Domain modeling is a crucial skill in software engineering, but traditional appr
 ## System Architecture & Design
 
 ### Domain Model
-![Domain Model](https://github.com/VasiliySeibert/domain-modelling-copilot/issues/2#issue-3242124218)
+![Domain Model]([https://github.com/VasiliySeibert/domain-modelling-copilot/issues/2#issue-3242124218](https://private-user-images.githubusercontent.com/97515697/467950674-98046157-9db0-47d2-9ef1-2bd3fd0b371a.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTI4MzA4MTgsIm5iZiI6MTc1MjgzMDUxOCwicGF0aCI6Ii85NzUxNTY5Ny80Njc5NTA2NzQtOTgwNDYxNTctOWRiMC00N2QyLTllZjEtMmJkM2ZkMGIzNzFhLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA3MTglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNzE4VDA5MjE1OFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWM3ZTQ4OWFhZTBmNDg2MzYyYmQxMzRiMjI0NzQyOGQ2YWY2NGY5ZDBkZTQyNDMxNGM1OWRhZTQyOTYwNmIyODAmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.EyRK2QW73-9rptbbMcq7Y7DsCMT2cRkcQT44R1jwp5E))
 *The domain model illustrating the core entities, relationships, and business logic of the Domain Modelling Copilot system.*
 
 ### Context Diagram
