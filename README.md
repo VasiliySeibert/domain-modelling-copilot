@@ -151,7 +151,7 @@ mongod
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/DarshanScripts/domain-modelling-copilot.git
+git clone https://github.com/VasiliySeibert/domain-modelling-copilot.git
 cd domain-modelling-copilot
 ```
 
@@ -248,12 +248,16 @@ Visit: [http://localhost:5000](http://localhost:5000)
 
 ---
 
-## 👨‍💻 Author
-Developed by **Darshan Shah**. Connect with me:
 
-- **LinkedIn**: [Darshan Shah](https://www.linkedin.com/in/darshan-shah-tech/)
-- **Facebook**: [DarshanScripts](https://www.facebook.com/DarshanScripts)
-- **GitHub**: [DarshanScripts](https://github.com/DarshanScripts)
-- **Quora**: [Darshan Shah](https://www.quora.com/profile/Darshan-Shah-1056)
-- **Medium**: [DarshanScripts](https://medium.com/@DarshanScripts)
-- **Fiverr**: [DarshanScripts](https://www.fiverr.com/darshanscripts)
+
+## Acknowledgments
+
+This university project was developed under the supervision of Prof. Andreas Rausch as part of the Masters in Digital Technologies program. We would like to acknowledge the guidance and support provided throughout the development process.
+
+### Development Team
+- **Product Owner:** Vasiliy Seibert
+- **Developers:** 
+  - Darshan Shah - https://github.com/DarshanScripts
+  - Meet Chavda - https://github.com/meetchavda06s
+  - Mitbhai Chauhan -https://github.com/Mitchauhan0712
+  - Pratham Rathod - https://github.com/PrathamRathod14
